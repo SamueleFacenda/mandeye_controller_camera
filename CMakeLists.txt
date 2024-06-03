@@ -58,13 +58,14 @@ include_directories(3rd/CppGPIO/include/)
 
 # NMEA and libserial
 find_path(LIBSERIAL_INCLUDE_DIR SerialPort.h
-        PATH_SUFFIXES include
-        PATHS /usr /usr/local /usr/include/libserial)
+  PATH_SUFFIXES libserial include
+  PATHS ${CMAKE_INCLUDE_PATH} /usr /usr/local /usr/include/libserial)
 message(${LIBSERIAL_INCLUDE_DIR})
-find_library(LIBSERIAL_LIBRARY
-        NAMES libserial.so
-        PATH_SUFFIXES lib
-        PATHS /usr/lib)
+find_library(LIBSERIAL_LIBRARY 
+  NAMES libserial.so
+  PATH_SUFFIXES lib
+  PATHS ${CMAKE_LIBRARY_PATH} /usr/lib)
+
 include_directories(3rd/minmea ${LIBSERIAL_INCLUDE_DIR})
 add_library(minea STATIC 3rd/minmea/minmea.c)
 

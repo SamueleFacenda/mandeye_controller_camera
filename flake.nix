@@ -1,14 +1,12 @@
 # nix comment
 {
   description = "Flake for mandeye building tests";
-
-  inputs.nixpkgs.url = "nixpkgs/nixos-23.05";
-
-  inputs.flake-utils.url = "github:numtide/flake-utils";
-
-  inputs.pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
-  inputs.pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
-
+  inputs = {
+    nixpkgs.url = "nixpkgs/nixos-23.05";
+    flake-utils.url = "github:numtide/flake-utils";
+    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
+    pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
+  };
   outputs = { self, nixpkgs, flake-utils, pre-commit-hooks }:
     flake-utils.lib.eachDefaultSystem (system:
       let pkgs = (nixpkgs.legacyPackages.${system}.extend (final: prev: {})); in
@@ -24,8 +22,10 @@
             nativeBuildInputs = with pkgs; [
               cmake
             ];
-            buildInputs = [
+            buildInputs = with pkgs; [
               libserial
+              rapidjson
+              
             ];
           };
           libserial = pkgs.stdenv.mkDerivation {
@@ -41,14 +41,13 @@
               cmake
             ];
             buildInputs = with pkgs; [
-              doxygen
-              boost
               autoconf
               libtool
-              gtest
             ];
-            propagatedBuildInputs = with pkgs.python3Packages; [
-              sip
+            cmakeFlags = [
+              "-DLIBSERIAL_BUILD_DOCS=OFF"
+              "-DLIBSERIAL_ENABLE_TESTING=OFF"
+              "-DLIBSERIAL_PYTHON_ENABLE=OFF"
             ];
           };
         };

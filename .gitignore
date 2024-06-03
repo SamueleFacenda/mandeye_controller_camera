@@ -5,4 +5,5 @@ build/
 build*/
 BUILD/
 BUILD*/
-.direnv
+/.direnv
+/result
