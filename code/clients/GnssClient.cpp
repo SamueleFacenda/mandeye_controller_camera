@@ -1,8 +1,8 @@
-#include "gnss.h"
+#include "GnssClient.h"
+#include "minmea.h"
+#include <exception>
 #include <iostream>
 #include <thread>
-#include <exception>
-#include "minmea.h"
 namespace mandeye
 {
 nlohmann::json GNSSClient::produceStatus()

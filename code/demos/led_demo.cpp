@@ -1,8 +1,7 @@
-#include <iostream>
-#include <gpios.h>
-#include <thread>
+#include "clients/GpioClient.h"
 #include <chrono>
-
+#include <iostream>
+#include <thread>
 
 int main(int arc, char *argv[]){
     std::cout << "led_demo" << std::endl;

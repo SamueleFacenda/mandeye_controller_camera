@@ -3,7 +3,7 @@
   description = "Flake for mandeye building tests";
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-23.05";
-    flake-utils.url = "github:numtide/flake-utils";
+    flake-utils.url = "github:numtide/flake-clients";
     pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
     pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
   };
@@ -61,8 +61,11 @@
         devShells = {
           default = pkgs.mkShell {
             nativeBuildInputs = with pkgs; [
-              gcc
               cmake
+            ];
+            buildInputs = with pkgs; [
+              self.packages.${system}.libserial
+              rapidjson
             ];
 
             # inherit (self.checks.${system}.pre-commit-check) shellHook;

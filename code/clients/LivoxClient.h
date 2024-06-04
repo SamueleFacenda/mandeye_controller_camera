@@ -1,12 +1,12 @@
 #pragma once
 
+#include "json.hpp"
 #include "livox_lidar_def.h"
+#include "clients/TimeStampProvider.h"
 #include <deque>
-#include <json.hpp>
 #include <mutex>
-#include <thread>
-#include "utils/TimeStampProvider.h"
 #include <set>
+#include <thread>
 namespace mandeye
 {
 struct LivoxPoint

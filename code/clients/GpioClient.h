@@ -1,7 +1,7 @@
 #pragma once
-#include <cppgpio/buttons.hpp>
-#include <cppgpio/output.hpp>
-#include <json.hpp>
+#include "cppgpio/buttons.hpp"
+#include "cppgpio/output.hpp"
+#include "json.hpp"
 #include <mutex>
 #include <unordered_map>
 namespace mandeye

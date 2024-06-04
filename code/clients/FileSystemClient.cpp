@@ -3,7 +3,6 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
-#include <stdbool.h>
 #include <unistd.h>
 namespace mandeye
 {

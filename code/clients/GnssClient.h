@@ -1,13 +1,13 @@
 #pragma once
 
+#include "json.hpp"
 #include <deque>
-#include <json.hpp>
 #include <mutex>
 
 #include <SerialPort.h>
 #include <SerialStream.h>
 #include "thread"
-#include "utils/TimeStampReceiver.h"
+#include "clients/TimeStampReceiver.h"
 #include "minmea.h"
 namespace mandeye
 {

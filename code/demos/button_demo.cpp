@@ -1,7 +1,7 @@
-#include <iostream>
-#include <gpios.h>
-#include <thread>
+#include "clients/GpioClient.h"
 #include <chrono>
+#include <iostream>
+#include <thread>
 
 std::mutex gpioClientPtrLock;
 std::shared_ptr<mandeye::GpioClient> gpioClientPtr;

@@ -1,6 +1,6 @@
-#include <cppgpio.hpp>
-#include <cppgpio/output.hpp>
-#include <gpios.h>
+#include "GpioClient.h"
+#include "cppgpio.hpp"
+#include "cppgpio/output.hpp"
 #include <iostream>
 
 namespace mandeye
