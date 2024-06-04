@@ -3,7 +3,7 @@
   description = "Flake for mandeye building tests";
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-23.05";
-    flake-utils.url = "github:numtide/flake-clients";
+    flake-utils.url = "github:numtide/flake-utils";
     pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
     pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
   };

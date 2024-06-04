@@ -71,16 +71,18 @@ add_library(minea STATIC 3rd/minmea/minmea.c)
 
 #executable
 add_executable(control_program
+        ${PISTACHE_SRC}
         code/main.cpp
+        code/utils/save_laz.cpp
+        code/state_management.cpp
         code/clients/GnssClient.cpp
-        code/web_page.h
         code/clients/LivoxClient.cpp
         code/clients/GpioClient.cpp
         code/clients/FileSystemClient.cpp
-        code/save_laz.cpp
-        ${PISTACHE_SRC}
         code/clients/TimeStampReceiver.cpp
-        code/state_management.cpp)
+        code/utils/utils.cpp
+        code/file_savers.cpp)
+
 set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -latomic")
 target_link_libraries(control_program pthread livox_lidar_sdk_static cppgpio-static pistache atomic laszip ${LIBSERIAL_LIBRARY} minea)
 #target_link_libraries(control_program pthread livox_lidar_sdk_static cppgpio-static atomic laszip)
@@ -90,6 +92,7 @@ add_executable(led_demo code/demos/led_demo.cpp code/clients/GpioClient.cpp)
 set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS}")
 target_link_libraries(led_demo cppgpio-static)
 
-add_executable(button_demo code/demos/button_demo.cpp code/clients/GpioClient.cpp)
+add_executable(button_demo code/demos/button_demo.cpp code/clients/GpioClient.cpp
+        code/web/ServerHandler.h)
 set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS}")
 target_link_libraries(button_demo cppgpio-static)

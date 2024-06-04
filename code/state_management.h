@@ -5,7 +5,7 @@
 #include "clients/GnssClient.h"
 #include "clients/GpioClient.h"
 #include "clients/LivoxClient.h"
-#include "save_laz.h"
+#include "utils/save_laz.h"
 #include <iostream>
 #include <string>
 
@@ -42,15 +42,15 @@ const std::map<States, std::string> StatesToString{
 	{States::USB_IO_ERROR, "USB_IO_ERROR"},
 };
 
-std::atomic<bool> isRunning{true};
-std::mutex livoxClientPtrLock;
-std::shared_ptr<LivoxClient> livoxCLientPtr;
-std::shared_ptr<GNSSClient> gnssClientPtr;
-std::mutex gpioClientPtrLock;
-std::shared_ptr<GpioClient> gpioClientPtr;
-std::shared_ptr<FileSystemClient> fileSystemClientPtr;
+extern std::atomic<bool> isRunning;
+extern std::mutex livoxClientPtrLock;
+extern std::shared_ptr<LivoxClient> livoxClientPtr;
+extern std::shared_ptr<GNSSClient> gnssClientPtr;
+extern std::mutex gpioClientPtrLock;
+extern std::shared_ptr<GpioClient> gpioClientPtr;
+extern std::shared_ptr<FileSystemClient> fileSystemClientPtr;
 
-mandeye::States app_state{mandeye::States::WAIT_FOR_RESOURCES};
+extern States app_state;
 
 std::string produceReport();
 bool StartScan();
@@ -58,11 +58,12 @@ bool StopScan();
 
 bool TriggerStopScan();
 bool TriggerContinousScanning();
-void savePointcloudData(LivoxPointsBufferPtr buffer, const std::string& directory, int chunk);
+void savePointcloudData(const LivoxPointsBufferPtr& buffer, const std::string& directory, int chunk);
 void saveLidarList(const std::unordered_map<uint32_t, std::string> &lidars, const std::string& directory, int chunk);
-void saveImuData(LivoxIMUBufferPtr buffer, const std::string& directory, int chunk);
+void saveImuData(const LivoxIMUBufferPtr& buffer, const std::string& directory, int chunk);
 void saveGnssData(std::deque<std::string>& buffer, const std::string& directory, int chunk);
-bool saveChunkToDisk(std::string outDirectory, int chunk);
+bool saveChunkToDisk(const std::string& outDirectory, int chunk);
+void getSavingStream(std::ofstream& out, const std::string& directory, const std::string& fileExtension, int chunkNumber);
 
 void stateWatcher();
 } // namespace mandeye

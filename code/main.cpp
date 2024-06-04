@@ -8,10 +8,9 @@
 #include "clients/GnssClient.h"
 #include "clients/GpioClient.h"
 #include "clients/LivoxClient.h"
+#include "web/ServerHandler.h"
+#include "utils/utils.h"
 #include "state_management.h"
-#include "save_laz.h"
-#include <chrono>
-#include <fstream>
 #include <iostream>
 #include <string>
 
@@ -22,96 +21,12 @@
 #define SERVER_PORT 8003
 #define MANDEYE_GNSS_UART "/dev/ttyS0"
 
-namespace utils
-{
-std::string getEnvString(const std::string& env, const std::string& def);
-bool getEnvBool(const std::string& env, bool def);
-void blinkLed(mandeye::GpioClient::LED led, std::chrono::milliseconds mills);
-} // namespace clients
-
-namespace utils
-{
-std::string getEnvString(const std::string& env, const std::string& def)
-{
-	const char* env_p = std::getenv(env.c_str());
-	if(env_p == nullptr)
-	{
-		return def;
-	}
-	return std::string{env_p};
-}
-
-bool getEnvBool(const std::string& env, bool def)
-{
-	const char* env_p = std::getenv(env.c_str());
-	if(env_p == nullptr)
-	{
-		return def;
-	}
-	if(strcmp("1", env_p) == 0 || strcmp("true", env_p) == 0)
-	{
-		return true;
-	}
-	return false;
-}
-
-void blinkLed(mandeye::GpioClient::LED led, std::chrono::milliseconds mills) {
-	mandeye::gpioClientPtr->setLed(led, true);
-	std::this_thread::sleep_for(mills);
-	mandeye::gpioClientPtr->setLed(led, false);
-	std::this_thread::sleep_for(mills);
-}
-} // namespace clients
-
-
-#if 1
-#include "web_page.h"
-#include <pistache/endpoint.h>
-using namespace Pistache;
-
-struct PistacheServerHandler : public Http::Handler
-{
-	HTTP_PROTOTYPE(PistacheServerHandler)
-	void onRequest(const Http::Request& request, Http::ResponseWriter writer) override
-	{
-		if(request.resource() == "/status" || request.resource() == "/json/status")
-		{
-			std::string p = mandeye::produceReport();
-			writer.send(Http::Code::Ok, p);
-			return;
-		}
-		else if(request.resource() == "/jquery.js")
-		{
-			writer.send(Http::Code::Ok, gJQUERYData);
-			return;
-		}
-		else if(request.resource() == "/trig/start_bag")
-		{
-			mandeye::StartScan();
-			writer.send(Http::Code::Ok, "");
-			return;
-		}
-		else if(request.resource() == "/trig/stop_bag")
-		{
-			mandeye::StopScan();
-			writer.send(Http::Code::Ok, "");
-			return;
-		}
-		else if(request.resource() == "/trig/stopscan")
-		{
-			mandeye::TriggerStopScan();
-			writer.send(Http::Code::Ok, "");
-			return;
-		}
-		writer.send(Http::Code::Ok, gINDEX_HTMData);
-	}
-};
-#endif
-
 int main(int argc, char** argv)
 {
 	std::cout << "program: " << argv[0] << " v0.4" << std::endl;
 	bool lidar_error = false;
+	using namespace Pistache;
+
 	Address addr(Ipv4::any(), SERVER_PORT);
 
 	auto server = std::make_shared<Http::Endpoint>(addr);
@@ -127,19 +42,19 @@ int main(int argc, char** argv)
 	std::thread thLivox([&]() {
 		{
 			std::lock_guard<std::mutex> l1(mandeye::livoxClientPtrLock);
-			mandeye::livoxCLientPtr = std::make_shared<mandeye::LivoxClient>();
+			mandeye::livoxClientPtr = std::make_shared<mandeye::LivoxClient>();
 		}
-		if(!mandeye::livoxCLientPtr->startListener(utils::getEnvString("MANDEYE_LIVOX_LISTEN_IP", MANDEYE_LIVOX_LISTEN_IP))){
+		if(!mandeye::livoxClientPtr->startListener(utils::getEnvString("MANDEYE_LIVOX_LISTEN_IP", MANDEYE_LIVOX_LISTEN_IP))){
 			lidar_error = true;
 		}
 
-		// intialize in this thread to prevent initialization fiasco
+		// initialize in this thread to prevent initialization fiasco
         const std::string portName = utils::getEnvString("MANDEYE_GNSS_UART", MANDEYE_GNSS_UART);
         if (!portName.empty())
         {
             mandeye::gnssClientPtr = std::make_shared<mandeye::GNSSClient>();
-            mandeye::gnssClientPtr->SetTimeStampProvider(mandeye::livoxCLientPtr);
-            mandeye::gnssClientPtr->startListener(utils::getEnvString("MANDEYE_GNSS_UART", MANDEYE_GNSS_UART), 9600);
+            mandeye::gnssClientPtr->SetTimeStampProvider(mandeye::livoxClientPtr);
+            mandeye::gnssClientPtr->startListener(portName, 9600);
         }
 	});
 	

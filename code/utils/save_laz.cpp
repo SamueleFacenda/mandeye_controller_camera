@@ -1,8 +1,8 @@
 #include "save_laz.h"
+#include "laszip/laszip_api.h"
 #include <iostream>
-#include <laszip/laszip_api.h>
 
-bool mandeye::saveLaz(const std::string& filename, LivoxPointsBufferPtr buffer)
+bool mandeye::saveLaz(const std::string& filename, const LivoxPointsBufferPtr& buffer)
 {
 
 	constexpr float scale = 0.0001f; // one tenth of milimeter
