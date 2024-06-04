@@ -1,9 +1,3 @@
-
-#include <chrono>
-#include <json.hpp>
-#include <ostream>
-#include <thread>
-
 #include "clients/FileSystemClient.h"
 #include "clients/GnssClient.h"
 #include "clients/GpioClient.h"
@@ -13,6 +7,10 @@
 #include "state_management.h"
 #include <iostream>
 #include <string>
+#include <chrono>
+#include <json.hpp>
+#include <ostream>
+#include <thread>
 
 //configuration for alienware
 #define MANDEYE_LIVOX_LISTEN_IP "192.168.1.5"
@@ -25,19 +23,25 @@ int main(int argc, char** argv)
 {
 	std::cout << "program: " << argv[0] << " v0.4" << std::endl;
 	bool lidar_error = false;
+
+	// Initialize pistache server (report web interface) /////////////////////////////
 	using namespace Pistache;
 
 	Address addr(Ipv4::any(), SERVER_PORT);
 
 	auto server = std::make_shared<Http::Endpoint>(addr);
-	std::thread http_thread1([&]() {
+	std::thread http_thread([&]() {
 		auto opts = Http::Endpoint::options().threads(2);
 		server->init(opts);
 		server->setHandler(Http::make_handler<PistacheServerHandler>());
 		server->serve();
 	});
 
+	// Filesystem client initialization
+
 	mandeye::fileSystemClientPtr = std::make_shared<mandeye::FileSystemClient>(utils::getEnvString("MANDEYE_REPO", MANDEYE_REPO));
+
+	// Initialize livox client (and also gnss connection) /////////////////////////////
 
 	std::thread thLivox([&]() {
 		{
@@ -57,13 +61,16 @@ int main(int argc, char** argv)
             mandeye::gnssClientPtr->startListener(portName, 9600);
         }
 	});
-	
+
+	// Initialize the state machine (the one that changes state and save readings to disk) ////
 
 	std::thread thStateMachine([&]() { mandeye::stateWatcher(); });
 
+	// Initialize Gpio client (led and buttons) //////////////////////////////////////
+
+	using namespace std::chrono_literals;
 	std::thread thGpio([&]() {
 		std::lock_guard<std::mutex> l2(mandeye::gpioClientPtrLock);
-		using namespace std::chrono_literals;
 		const bool simMode = utils::getEnvBool("MANDEYE_GPIO_SIM", MANDEYE_GPIO_SIM);
 		std::cout << "MANDEYE_GPIO_SIM : " << simMode << std::endl;
 		mandeye::gpioClientPtr = std::make_shared<mandeye::GpioClient>(simMode);
@@ -78,41 +85,50 @@ int main(int argc, char** argv)
 		mandeye::gpioClientPtr->addButtonCallback(mandeye::GpioClient::BUTTON::BUTTON_CONTINOUS_SCANNING, "BUTTON_CONTINOUS_SCANNING", [&]() { mandeye::TriggerContinousScanning(); });
 	});
 
-	while(mandeye::isRunning)
-	{
-		using namespace std::chrono_literals;
-		std::this_thread::sleep_for(1000ms);
-		char ch = std::getchar();
-		if(ch == 'q')
-		{
-			mandeye::isRunning.store(false);
-		}
-		if(!lidar_error){
-			std::cout << "Press q -> quit, s -> start scan , e -> end scan" << std::endl;
+	// Main cycle (cli interface) //////////////////////////////////////////////
 
-			if(ch == 's')
-			{
-				if(mandeye::StartScan())
-				{
-					std::cout << "start scan success!" << std::endl;
-				}
-			}
-			else if(ch == 'e')
-			{
-				if(mandeye::StopScan())
-				{
-					std::cout << "stop scan success!" << std::endl;
-				}
-			}
-		}else{
+	char ch;
+	do {
+		std::this_thread::sleep_for(1000ms);
+		std::cin.get(ch);
+
+		if (lidar_error) { // loop guard clause
 			mandeye::app_state = mandeye::States::LIDAR_ERROR;
 			std::cout << "lidar error" << std::endl;
 			std::this_thread::sleep_for(1000ms);
+			continue; // skip the rest
 		}
-	}
 
-	server->shutdown();
-	http_thread1.join();
+		std::cout << "Press q -> quit, s -> start scan , e -> end scan" << std::endl;
+		switch(ch) {
+		case 's':
+			if(mandeye::StartScan())
+			{
+				std::cout << "start scan success!" << std::endl;
+			}
+			break;
+		case 'e':
+			if(mandeye::StopScan())
+			{
+				std::cout << "stop scan success!" << std::endl;
+			}
+			break;
+		case 'q':
+			std::cout << "Stopping..." << std::endl;
+			break;
+		default:
+			std::cerr << "Unknown instruction: '" << ch << "'" << std::endl;
+		}
+	} while (ch != 'q');
+
+	// Stop and join everyone
+
+	mandeye::isRunning.store(false); // stop the state machine
+	server->shutdown(); // http server stop
+
+	std::cout << "joining Pistache thread" << std::endl;
+	http_thread.join();
+
 	std::cout << "joining thStateMachine" << std::endl;
 	thStateMachine.join();
 
@@ -121,6 +137,7 @@ int main(int argc, char** argv)
 
 	std::cout << "joining thGpio" << std::endl;
 	thGpio.join();
+
 	std::cout << "Done" << std::endl;
 	return 0;
 }
