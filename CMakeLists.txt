@@ -42,6 +42,8 @@ find_library(LIBSERIAL_LIBRARY
 include_directories(3rd/minmea ${LIBSERIAL_INCLUDE_DIR})
 add_library(minea STATIC 3rd/minmea/minmea.c)
 
+find_package(OpenCV REQUIRED)
+
 #executable
 add_executable(control_program
         ${PISTACHE_SRC}
@@ -54,11 +56,14 @@ add_executable(control_program
         src/clients/FileSystemClient.cpp
         src/clients/TimeStampReceiver.cpp
         src/utils/utils.cpp
-        src/file_savers.cpp)
-target_include_directories(control_program PRIVATE include)
+        src/file_savers.cpp
+        src/clients/CamerasClient.cpp)
+target_include_directories(control_program
+        PRIVATE include
+        SYSTEM ${OpenCV_INCLUDE_DIRS})
 
 set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -latomic")
-target_link_libraries(control_program pthread livox_lidar_sdk_static cppgpio-static pistache atomic laszip ${LIBSERIAL_LIBRARY} minea)
+target_link_libraries(control_program pthread livox_lidar_sdk_static cppgpio-static pistache atomic laszip ${LIBSERIAL_LIBRARY} minea ${OpenCV_LIBS})
 #target_link_libraries(control_program pthread livox_lidar_sdk_static cppgpio-static atomic laszip)
 
 add_executable(led_demo src/demos/led_demo.cpp src/clients/GpioClient.cpp)

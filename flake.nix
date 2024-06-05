@@ -25,7 +25,7 @@
             buildInputs = with pkgs; [
               libserial
               rapidjson
-              
+              opencv
             ];
           };
           libserial = pkgs.stdenv.mkDerivation {
@@ -66,6 +66,7 @@
             buildInputs = with pkgs; [
               self.packages.${system}.libserial
               rapidjson
+              opencv
             ];
 
             # inherit (self.checks.${system}.pre-commit-check) shellHook;
