@@ -42,33 +42,31 @@ find_library(LIBSERIAL_LIBRARY
 include_directories(3rd/minmea ${LIBSERIAL_INCLUDE_DIR})
 add_library(minea STATIC 3rd/minmea/minmea.c)
 
-
-# Project headers
-include_directories(code/)
-
 #executable
 add_executable(control_program
         ${PISTACHE_SRC}
-        code/main.cpp
-        code/utils/save_laz.cpp
-        code/state_management.cpp
-        code/clients/GnssClient.cpp
-        code/clients/LivoxClient.cpp
-        code/clients/GpioClient.cpp
-        code/clients/FileSystemClient.cpp
-        code/clients/TimeStampReceiver.cpp
-        code/utils/utils.cpp
-        code/file_savers.cpp)
+        src/main.cpp
+        src/utils/save_laz.cpp
+        src/state_management.cpp
+        src/clients/GnssClient.cpp
+        src/clients/LivoxClient.cpp
+        src/clients/GpioClient.cpp
+        src/clients/FileSystemClient.cpp
+        src/clients/TimeStampReceiver.cpp
+        src/utils/utils.cpp
+        src/file_savers.cpp)
+target_include_directories(control_program PRIVATE include)
 
 set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -latomic")
 target_link_libraries(control_program pthread livox_lidar_sdk_static cppgpio-static pistache atomic laszip ${LIBSERIAL_LIBRARY} minea)
 #target_link_libraries(control_program pthread livox_lidar_sdk_static cppgpio-static atomic laszip)
 
-add_executable(led_demo code/demos/led_demo.cpp code/clients/GpioClient.cpp)
+add_executable(led_demo src/demos/led_demo.cpp src/clients/GpioClient.cpp)
+target_include_directories(led_demo PRIVATE include)
 set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS}")
 target_link_libraries(led_demo cppgpio-static)
 
-add_executable(button_demo code/demos/button_demo.cpp code/clients/GpioClient.cpp
-        code/web/ServerHandler.h)
+add_executable(button_demo src/demos/button_demo.cpp src/clients/GpioClient.cpp)
+target_include_directories(button_demo PRIVATE include)
 set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS}")
 target_link_libraries(button_demo cppgpio-static)

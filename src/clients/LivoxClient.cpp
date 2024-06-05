@@ -1,4 +1,4 @@
-#include "LivoxClient.h"
+#include "clients/LivoxClient.h"
 #include "fstream"
 #include "livox_lidar_api.h"
 #include "livox_lidar_def.h"
@@ -165,7 +165,7 @@ std::pair<LivoxPointsBufferPtr, LivoxIMUBufferPtr> LivoxClient::retrieveData()
 	LivoxIMUBufferPtr returnPointerImu{std::make_shared<LivoxIMUBuffer>()};
 	std::swap(m_bufferIMUPtr, returnPointerImu);
 	std::swap(m_bufferLivoxPtr, returnPointerLidar);
-	return std::pair<LivoxPointsBufferPtr, LivoxIMUBufferPtr>(returnPointerLidar, returnPointerImu);
+	return std::pair{returnPointerLidar, returnPointerImu};
 }
 void LivoxClient::testThread()
 {

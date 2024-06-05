@@ -1,5 +1,5 @@
-#include "TimeStampReceiver.h"
-#include "TimeStampProvider.h"
+#include "clients/TimeStampReceiver.h"
+#include "clients/TimeStampProvider.h"
 namespace mandeye_utils
 {
 

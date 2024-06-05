@@ -2,14 +2,14 @@
 #include "clients/GnssClient.h"
 #include "clients/GpioClient.h"
 #include "clients/LivoxClient.h"
-#include "web/ServerHandler.h"
-#include "utils/utils.h"
 #include "state_management.h"
-#include <iostream>
-#include <string>
+#include "utils/utils.h"
+#include "web/ServerHandler.h"
 #include <chrono>
+#include <iostream>
 #include <json.hpp>
 #include <ostream>
+#include <string>
 #include <thread>
 
 //configuration for alienware
@@ -17,7 +17,8 @@
 #define MANDEYE_REPO "/media/usb/"
 #define MANDEYE_GPIO_SIM false
 #define SERVER_PORT 8003
-#define MANDEYE_GNSS_UART "/dev/ttyS0"
+#define MANDEYE_GNSS_UART ""
+// #define MANDEYE_GNSS_UART "/dev/ttyS0"
 
 int main(int argc, char** argv)
 {

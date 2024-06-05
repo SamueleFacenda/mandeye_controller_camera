@@ -4,11 +4,11 @@
 #include <deque>
 #include <mutex>
 
+#include "TimeStampReceiver.h"
+#include "minmea.h"
+#include "thread"
 #include <SerialPort.h>
 #include <SerialStream.h>
-#include "thread"
-#include "clients/TimeStampReceiver.h"
-#include "minmea.h"
 namespace mandeye
 {
 

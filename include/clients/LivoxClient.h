@@ -1,8 +1,8 @@
 #pragma once
 
+#include "TimeStampProvider.h"
 #include "json.hpp"
 #include "livox_lidar_def.h"
-#include "clients/TimeStampProvider.h"
 #include <deque>
 #include <mutex>
 #include <set>

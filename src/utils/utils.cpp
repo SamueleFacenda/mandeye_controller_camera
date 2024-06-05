@@ -1,8 +1,4 @@
-//
-// Created by samu on 04/06/24.
-//
-
-#include "utils.h"
+#include "utils/utils.h"
 #include "state_management.h"
 
 namespace utils
