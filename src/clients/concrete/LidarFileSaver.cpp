@@ -1,0 +1,26 @@
+#include "clients/concrete/LidarFileSaver.h"
+
+namespace mandeye_utils
+{
+
+void LidarFileSaver::printBufferToFileString(std::stringstream& fss) {
+	for(const auto& [id, sn] : buffer)
+	{
+		fss << id << " " << sn << "\n";
+	}
+}
+
+std::string LidarFileSaver::getFileExtension()
+{
+	return "lidar";
+}
+
+std::string LidarFileSaver::getFileIdentifier()
+{
+	return "ls";
+}
+void LidarFileSaver::setBuffer(const std::unordered_map<uint32_t, std::string>& inBuf) {
+	buffer = inBuf;
+}
+
+}

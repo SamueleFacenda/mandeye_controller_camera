@@ -2,6 +2,7 @@
 #define MANDEYE_MULTISENSOR_CAMERASCLIENT_H
 
 #include "clients/TimeStampReceiver.h"
+#include "clients/SaveChunkToDirClient.h"
 #include <filesystem>
 #include <opencv2/opencv.hpp>
 
@@ -12,11 +13,12 @@ struct stampedImage {
 	cv::Mat image;
 };
 
-class CamerasClient : public mandeye_utils::TimeStampReceiver {
+class CamerasClient : public mandeye_utils::TimeStampReceiver, public mandeye_utils::SaveChunkToDirClient {
 	public:
 		explicit CamerasClient(const std::vector<int>& cameraIndexes);
-		void saveBuffersToDirectory(const std::string& dirName, int chunkNumber);
 		void receiveImages();
+		void saveChunkToDirectory(const std::filesystem::path& directory, int chunk) override;
+
 	private:
 		std::vector<cv::VideoCapture> caps;
 		std::mutex buffersMutex;

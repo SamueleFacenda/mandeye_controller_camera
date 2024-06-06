@@ -128,4 +128,20 @@ std::string GNSSClient::GgaToCsvLine(const minmea_sentence_gga& gga, double lase
 	oss << gga.fix_quality << "\n";
 	return oss.str();
 }
+
+void GNSSClient::printBufferToFileString(std::stringstream& fss) {
+	for(std::string& i:retrieveData())
+		fss << i;
+}
+
+std::string GNSSClient::getFileExtension()
+{
+	return "gnss";
+}
+
+std::string GNSSClient::getFileIdentifier()
+{
+	return "gnss";
+}
+
 } // namespace mandeye

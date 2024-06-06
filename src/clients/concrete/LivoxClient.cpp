@@ -2,6 +2,7 @@
 #include "fstream"
 #include "livox_lidar_api.h"
 #include "livox_lidar_def.h"
+#include "utils/save_laz.h"
 #include <iostream>
 #include <thread>
 
@@ -506,6 +507,22 @@ uint16_t LivoxClient::handleToLidarId(uint32_t handle) const
 	}
 
 	return 255;
+}
+
+void LivoxClient::saveChunkToDirectory(const std::filesystem::path& directory, int chunk) {
+	auto [lidarBuffer, imuBuffer] = retrieveData();
+	auto lidarList = getSerialNumberToLidarIdMapping();
+
+	lidarFileSaver.setBuffer(lidarList);
+	imuFileSaver.setBuffer(imuBuffer);
+	lidarFileSaver.saveChunkToDirectory(directory, chunk);
+	imuFileSaver.saveChunkToDirectory(directory, chunk);
+
+	char pointcloudFileName[64];
+	snprintf(pointcloudFileName, 64, "lidar%04d.laz", chunk);
+	std::filesystem::path lidarFilePath = std::filesystem::path(directory) / std::filesystem::path(pointcloudFileName);
+	std::cout << "Savig lidar buffer of size " << lidarBuffer->size() << " to " << lidarFilePath << std::endl;
+	saveLaz(lidarFilePath.string(), lidarBuffer);
 }
 
 } // namespace mandeye

@@ -57,7 +57,9 @@ add_executable(control_program
         src/clients/TimeStampReceiver.cpp
         src/utils/utils.cpp
         src/file_savers.cpp
-        src/clients/concrete/CamerasClient.cpp)
+        src/clients/concrete/CamerasClient.cpp
+        src/clients/concrete/ImuFileSaver.cpp
+        include/clients/concrete/ImuFileSaver.h)
 target_include_directories(control_program
         PUBLIC include
         SYSTEM ${OpenCV_INCLUDE_DIRS})
@@ -74,7 +76,9 @@ target_link_libraries(led_demo cppgpio-static)
 add_executable(button_demo src/demos/button_demo.cpp src/clients/concrete/GpioClient.cpp
         include/clients/SaveChunkToDirClient.h
         src/clients/SaveChunkInFileClient.cpp
-        include/clients/SaveChunkInFileClient.h)
+        include/clients/SaveChunkInFileClient.h
+        src/clients/concrete/LidarFileSaver.cpp
+        include/clients/concrete/LidarFileSaver.h)
 target_include_directories(button_demo PRIVATE include)
 set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS}")
 target_link_libraries(button_demo cppgpio-static)

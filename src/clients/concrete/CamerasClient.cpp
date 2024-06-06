@@ -26,7 +26,8 @@ void CamerasClient::initializeVideoCapture(int index) {
 	buffers.push_back(buffer);
 }
 
-void CamerasClient::saveBuffersToDirectory(const std::string& dirName, int chunkNumber) {
+void CamerasClient::saveChunkToDirectory(const std::filesystem::path& dirName, int chunkNumber)
+{
 	using namespace std::filesystem;
 	char chunkDir[64];
 	snprintf(chunkDir, 64, "images%04d", chunkNumber);

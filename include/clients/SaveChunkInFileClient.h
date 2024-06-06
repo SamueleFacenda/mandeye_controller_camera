@@ -16,7 +16,7 @@ public:
 	void saveChunkToDirectory(const std::filesystem::path& directory, int chunk) override;
 
 protected:
-	virtual void printBufferToFileString(const std::stringstream& fss) = 0;
+	virtual void printBufferToFileString(std::stringstream& fss) = 0;
 	virtual std::string getFileExtension() = 0;
 	virtual std::string getFileIdentifier() = 0;
 

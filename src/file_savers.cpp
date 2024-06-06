@@ -102,7 +102,7 @@ bool saveChunkToDisk(const string& outDirectory, int chunk)
 		saveGnssData(gnssBuffer, outDirectory, chunk);
 	}
 
-	camerasClientPtr->saveBuffersToDirectory(outDirectory, chunk);
+	camerasClientPtr->saveChunkToDirectory(outDirectory, chunk);
 
 	utils::syncDisk();
 

@@ -5,6 +5,7 @@
 #include <mutex>
 
 #include "clients/TimeStampReceiver.h"
+#include "clients/SaveChunkInFileClient.h"
 #include "minmea.h"
 #include "thread"
 #include <SerialPort.h>
@@ -13,10 +14,14 @@ namespace mandeye
 {
 
 
-class GNSSClient : public mandeye_utils::TimeStampReceiver
+class GNSSClient : public mandeye_utils::TimeStampReceiver, public mandeye_utils::SaveChunkInFileClient
 {
-public:
+private:
+	void printBufferToFileString(std::stringstream& fss) override;
+	std::string getFileExtension() override;
+	std::string getFileIdentifier() override;
 
+public:
 	nlohmann::json produceStatus();
 
 	//! Spins up a thread that reads from the serial port

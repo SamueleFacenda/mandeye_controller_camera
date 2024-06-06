@@ -1,6 +1,9 @@
 #pragma once
 
 #include "clients/TimeStampProvider.h"
+#include "clients/SaveChunkToDirClient.h"
+#include "clients/concrete/ImuFileSaver.h"
+#include "clients/concrete/LidarFileSaver.h"
 #include "json.hpp"
 #include "livox_lidar_def.h"
 #include <deque>
@@ -45,7 +48,7 @@ using LivoxIMUBuffer = std::deque<LivoxIMU>;
 using LivoxIMUBufferPtr = std::shared_ptr<std::deque<LivoxIMU>>;
 using LivoxIMUBufferConstPtr = std::shared_ptr<const std::deque<LivoxIMU>>;
 
-class LivoxClient : public mandeye_utils::TimeStampProvider
+class LivoxClient : public mandeye_utils::TimeStampProvider, public mandeye_utils::SaveChunkToDirClient
 {
 public:
 	nlohmann::json produceStatus();
@@ -69,6 +72,8 @@ public:
 
 	// periodically ask lidars for status
 	void testThread();
+
+	void saveChunkToDirectory(const std::filesystem::path& directory, int chunk) override;
 
 private:
 	bool isDone{false};
@@ -104,6 +109,9 @@ private:
 	//! id is zero for lidar with smallest Serial number
 	//! @param handle the handle to convert
 	uint16_t handleToLidarId(uint32_t handle) const;
+
+	mandeye_utils::ImuFileSaver imuFileSaver;
+	mandeye_utils::LidarFileSaver lidarFileSaver;
 
 
 	static constexpr char config[] =
