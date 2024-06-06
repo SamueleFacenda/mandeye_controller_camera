@@ -39,4 +39,15 @@ void syncDisk() {
 		std::cerr << "Error syncing disk\n";
 	}
 }
+
+std::vector<int> getIntListFromEnvVar(const std::string& env, const std::string& def)
+{
+	std::vector<int> out;
+	std::istringstream iss(getEnvString(env, def));
+	int tmp;
+	while (iss >> tmp)
+		out.push_back(tmp);
+	return out;
+}
+
 }

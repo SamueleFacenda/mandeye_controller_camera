@@ -16,6 +16,7 @@ std::shared_ptr<GNSSClient> gnssClientPtr;
 std::mutex gpioClientPtrLock;
 std::shared_ptr<GpioClient> gpioClientPtr;
 std::shared_ptr<FileSystemClient> fileSystemClientPtr;
+std::shared_ptr<CamerasClient> camerasClientPtr;
 States app_state{mandeye::States::WAIT_FOR_RESOURCES};
 
 

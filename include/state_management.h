@@ -1,6 +1,7 @@
 #ifndef MANDEYE_MULTISENSOR_STATE_MANAGEMENT_H
 #define MANDEYE_MULTISENSOR_STATE_MANAGEMENT_H
 
+#include "clients/CamerasClient.h"
 #include "clients/FileSystemClient.h"
 #include "clients/GnssClient.h"
 #include "clients/GpioClient.h"
@@ -49,6 +50,7 @@ extern std::shared_ptr<GNSSClient> gnssClientPtr;
 extern std::mutex gpioClientPtrLock;
 extern std::shared_ptr<GpioClient> gpioClientPtr;
 extern std::shared_ptr<FileSystemClient> fileSystemClientPtr;
+extern std::shared_ptr<CamerasClient> camerasClientPtr;
 
 extern States app_state;
 

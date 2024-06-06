@@ -101,6 +101,9 @@ bool saveChunkToDisk(const string& outDirectory, int chunk)
 	{
 		saveGnssData(gnssBuffer, outDirectory, chunk);
 	}
+
+	camerasClientPtr->saveBuffersToDirectory(outDirectory, chunk);
+
 	utils::syncDisk();
 
 	mandeye::gpioClientPtr->setLed(mandeye::GpioClient::LED::LED_GPIO_COPY_DATA, false);

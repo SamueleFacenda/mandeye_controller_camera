@@ -16,6 +16,7 @@ class CamerasClient : public mandeye_utils::TimeStampReceiver {
 	public:
 		explicit CamerasClient(const std::vector<int>& cameraIndexes);
 		void saveBuffersToDirectory(const std::string& dirName, int chunkNumber);
+		void receiveImages();
 	private:
 		std::vector<cv::VideoCapture> caps;
 		std::mutex buffersMutex;
@@ -26,7 +27,6 @@ class CamerasClient : public mandeye_utils::TimeStampReceiver {
 		void addImagesToBuffer(const std::vector<cv::Mat>& images, double timestamp);
 		std::vector<cv::Mat> readSynchedImages();
 
-		void receiveImages();
 };
 
 } // namespace mandeye

@@ -63,6 +63,14 @@ int main(int argc, char** argv)
         }
 	});
 
+	// Initialize the camera client /////////////////////////////////////////////////////
+
+
+	mandeye::camerasClientPtr = std::make_shared<mandeye::CamerasClient>(utils::getIntListFromEnvVar("MANDEYE_CAMERA_IDS","0"));
+	std::thread thCameras([&]() {
+		mandeye::camerasClientPtr->receiveImages();
+	});
+
 	// Initialize the state machine (the one that changes state and save readings to disk) ////
 
 	std::thread thStateMachine([&]() { mandeye::stateWatcher(); });
