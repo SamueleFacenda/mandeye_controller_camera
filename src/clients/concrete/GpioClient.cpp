@@ -1,4 +1,4 @@
-#include "clients/GpioClient.h"
+#include "clients/concrete/GpioClient.h"
 #include "cppgpio.hpp"
 #include "cppgpio/output.hpp"
 #include <iostream>

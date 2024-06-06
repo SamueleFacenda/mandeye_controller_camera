@@ -1,5 +1,5 @@
 #pragma once
-#include "clients/LivoxClient.h"
+#include "clients/concrete/LivoxClient.h"
 #include <string>
 namespace mandeye
 {

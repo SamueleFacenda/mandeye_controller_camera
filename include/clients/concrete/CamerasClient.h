@@ -1,7 +1,7 @@
 #ifndef MANDEYE_MULTISENSOR_CAMERASCLIENT_H
 #define MANDEYE_MULTISENSOR_CAMERASCLIENT_H
 
-#include "TimeStampReceiver.h"
+#include "clients/TimeStampReceiver.h"
 #include <filesystem>
 #include <opencv2/opencv.hpp>
 

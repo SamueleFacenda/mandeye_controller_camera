@@ -1,4 +1,4 @@
-#include "clients/GnssClient.h"
+#include "clients/concrete/GnssClient.h"
 #include "minmea.h"
 #include <exception>
 #include <iostream>

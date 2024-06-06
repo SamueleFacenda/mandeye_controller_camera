@@ -1,4 +1,4 @@
-#include "clients/CamerasClient.h"
+#include "clients/concrete/CamerasClient.h"
 #include "state_management.h"
 #include <opencv2/opencv.hpp>
 

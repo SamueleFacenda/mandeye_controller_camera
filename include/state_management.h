@@ -1,11 +1,11 @@
 #ifndef MANDEYE_MULTISENSOR_STATE_MANAGEMENT_H
 #define MANDEYE_MULTISENSOR_STATE_MANAGEMENT_H
 
-#include "clients/CamerasClient.h"
-#include "clients/FileSystemClient.h"
-#include "clients/GnssClient.h"
-#include "clients/GpioClient.h"
-#include "clients/LivoxClient.h"
+#include "clients/concrete/CamerasClient.h"
+#include "clients/concrete/FileSystemClient.h"
+#include "clients/concrete/GnssClient.h"
+#include "clients/concrete/GpioClient.h"
+#include "clients/concrete/LivoxClient.h"
 #include "utils/save_laz.h"
 #include <iostream>
 #include <string>

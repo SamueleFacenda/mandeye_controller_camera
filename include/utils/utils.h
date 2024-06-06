@@ -1,6 +1,6 @@
 #ifndef MANDEYE_MULTISENSOR_UTILS_H
 #define MANDEYE_MULTISENSOR_UTILS_H
-#include "clients/GpioClient.h"
+#include "clients/concrete/GpioClient.h"
 
 namespace utils
 {
