@@ -50,7 +50,8 @@ extern std::shared_ptr<GNSSClient> gnssClientPtr;
 extern std::mutex gpioClientPtrLock;
 extern std::shared_ptr<GpioClient> gpioClientPtr;
 extern std::shared_ptr<FileSystemClient> fileSystemClientPtr;
-extern std::shared_ptr<CamerasClient> camerasClientPtr;
+extern std::vector<std::shared_ptr<mandeye_utils::SaveChunkToDirClient>> saveableClients;
+
 
 extern States app_state;
 
@@ -60,12 +61,7 @@ bool StopScan();
 
 bool TriggerStopScan();
 bool TriggerContinousScanning();
-void savePointcloudData(const LivoxPointsBufferPtr& buffer, const std::string& directory, int chunk);
-void saveLidarList(const std::unordered_map<uint32_t, std::string> &lidars, const std::string& directory, int chunk);
-void saveImuData(const LivoxIMUBufferPtr& buffer, const std::string& directory, int chunk);
-void saveGnssData(std::deque<std::string>& buffer, const std::string& directory, int chunk);
 bool saveChunkToDisk(const std::string& outDirectory, int chunk);
-void getSavingStream(std::ofstream& out, const std::string& directory, const std::string& fileExtension, int chunkNumber);
 
 void stateWatcher();
 } // namespace mandeye

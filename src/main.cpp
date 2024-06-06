@@ -61,15 +61,18 @@ int main(int argc, char** argv)
             mandeye::gnssClientPtr->SetTimeStampProvider(mandeye::livoxClientPtr);
             mandeye::gnssClientPtr->startListener(portName, 9600);
         }
+		mandeye::saveableClients.push_back(mandeye::livoxClientPtr);
+		mandeye::saveableClients.push_back(mandeye::gnssClientPtr);
 	});
+
 
 	// Initialize the camera client /////////////////////////////////////////////////////
 
-
-	mandeye::camerasClientPtr = std::make_shared<mandeye::CamerasClient>(utils::getIntListFromEnvVar("MANDEYE_CAMERA_IDS","0"));
+	std::shared_ptr<mandeye::CamerasClient> camerasClientPtr = std::make_shared<mandeye::CamerasClient>(utils::getIntListFromEnvVar("MANDEYE_CAMERA_IDS","0"));
 	std::thread thCameras([&]() {
-		mandeye::camerasClientPtr->receiveImages();
+		camerasClientPtr->receiveImages();
 	});
+	mandeye::saveableClients.push_back(camerasClientPtr);
 
 	// Initialize the state machine (the one that changes state and save readings to disk) ////
 

@@ -18,6 +18,7 @@ std::shared_ptr<GpioClient> gpioClientPtr;
 std::shared_ptr<FileSystemClient> fileSystemClientPtr;
 std::shared_ptr<CamerasClient> camerasClientPtr;
 States app_state{mandeye::States::WAIT_FOR_RESOURCES};
+std::vector<std::shared_ptr<mandeye_utils::SaveChunkToDirClient>> saveableClients;
 
 
 std::string produceReport()
@@ -95,6 +96,22 @@ bool TriggerContinousScanning(){
 		return true;
 	}
 	return false;
+}
+
+bool saveChunkToDisk(const std::string& outDirectory, int chunk)
+{
+	mandeye::gpioClientPtr->setLed(mandeye::GpioClient::LED::LED_GPIO_COPY_DATA, true);
+	if(outDirectory.empty())
+	{
+		app_state = States::USB_IO_ERROR;
+		return false;
+	}
+	for(std::shared_ptr<mandeye_utils::SaveChunkToDirClient>& client: saveableClients)
+		client->saveChunkToDirectory(outDirectory, chunk);
+
+	utils::syncDisk();
+	mandeye::gpioClientPtr->setLed(mandeye::GpioClient::LED::LED_GPIO_COPY_DATA, false);
+	return true;
 }
 
 using namespace std::chrono_literals;

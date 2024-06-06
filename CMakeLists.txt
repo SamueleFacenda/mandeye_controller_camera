@@ -56,7 +56,6 @@ add_executable(control_program
         src/clients/concrete/FileSystemClient.cpp
         src/clients/TimeStampReceiver.cpp
         src/utils/utils.cpp
-        src/file_savers.cpp
         src/clients/concrete/CamerasClient.cpp
         src/clients/concrete/ImuFileSaver.cpp
         include/clients/concrete/ImuFileSaver.h)
