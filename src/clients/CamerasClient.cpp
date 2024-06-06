@@ -27,10 +27,30 @@ void CamerasClient::initializeVideoCapture(int index) {
 }
 
 void CamerasClient::saveBuffersToDirectory(const std::string& dirName, int chunkNumber) {
-
+	using namespace std::filesystem;
+	char chunkDir[64];
+	snprintf(chunkDir, 64, "images%04d", chunkNumber);
+	path outDir = dirName / path(chunkDir);
+	if (!create_directory(outDir)) {
+		std::cerr << "Error creating directory '" << outDir << "'" << std::endl;
+		return; // do not clean up the buffers, keep images in memory
+	}
+	for(int i=0; i<buffers.size(); i++)
+		saveBufferToDirectory(outDir, buffers[i], i);
 }
 
-void CamerasClient::saveBufferToDirectory(const std::string& dirName) { }
+void CamerasClient::saveBufferToDirectory(const std::filesystem::path& dirName, std::deque<stampedImage>& buffer, int cameraId) {
+	stampedImage tmp;
+	std::filesystem::path imagePath;
+	char filename[64];
+	while(!buffer.empty()) {
+		tmp = buffer.front();
+		snprintf(filename, 64, "camera_%d_stamp_%d.png", cameraId, (int) (tmp.timestamp * 1e9));
+		imagePath = dirName / filename;
+		imwrite(imagePath, tmp.image);
+		buffer.pop_front();
+	}
+}
 
 
 std::vector<Mat> CamerasClient::readSynchedImages()

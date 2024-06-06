@@ -65,7 +65,9 @@ void getSavingStream(ofstream& out, const string& directory, const string& fileE
 {
 	char filename[64];
 	snprintf(filename, 64, "imu%04d.%s", chunkNumber, fileExtension.c_str());
-	out.open(filename);
+	using namespace std::filesystem;
+	path outFile = path(directory) / path(filename);
+	out.open(outFile);
 	if(out.fail())
 	{
 		cerr << "Error opening file '" << filename << "' !!" << endl;

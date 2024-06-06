@@ -2,6 +2,7 @@
 #define MANDEYE_MULTISENSOR_CAMERASCLIENT_H
 
 #include "TimeStampReceiver.h"
+#include <filesystem>
 #include <opencv2/opencv.hpp>
 
 namespace mandeye {
@@ -21,7 +22,7 @@ class CamerasClient : public mandeye_utils::TimeStampReceiver {
 		std::vector<std::deque<stampedImage>> buffers;
 
 		void initializeVideoCapture(int index);
-		void saveBufferToDirectory(const std::string& dirName);
+		void saveBufferToDirectory(const std::filesystem::path& dirName, std::deque<stampedImage>& buffer, int cameraId);
 		void addImagesToBuffer(const std::vector<cv::Mat>& images, double timestamp);
 		std::vector<cv::Mat> readSynchedImages();
 
