@@ -64,7 +64,9 @@ int main(int argc, char** argv)
             gnssClientPtr->startListener(portName, 9600);
         }
 		saveableClients.push_back(std::dynamic_pointer_cast<mandeye_utils::SaveChunkToDirClient>(livoxClientPtr));
+		loggerClients.push_back(std::dynamic_pointer_cast<mandeye_utils::LoggerClient>(livoxClientPtr));
 		saveableClients.push_back(gnssClientPtr);
+		loggerClients.push_back(gnssClientPtr);
 	});
 
 
