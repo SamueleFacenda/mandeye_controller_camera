@@ -58,7 +58,7 @@ std::string produceReport()
 
 bool StartScan()
 {
-	if(app_state == States::IDLE || app_state == States::STOPPED)
+	if(app_state == States::IDLE)
 	{
 		app_state = States::STARTING_SCAN;
 		return true;
@@ -77,7 +77,7 @@ bool StopScan()
 
 bool TriggerStopScan()
 {
-	if(app_state == States::IDLE || app_state == States::STOPPED)
+	if(app_state == States::IDLE)
 	{
 		app_state = States::STARTING_STOP_SCAN;
 		return true;
@@ -86,7 +86,7 @@ bool TriggerStopScan()
 }
 
 bool TriggerContinousScanning(){
-	if(app_state == States::IDLE || app_state == States::STOPPED){
+	if(app_state == States::IDLE){
 		app_state = States::STARTING_SCAN;
 		return true;
 	}else if(app_state == States::SCANNING)
@@ -275,10 +275,10 @@ void stateWatcher()
 		{
 			const auto now = std::chrono::steady_clock::now();
 			if(now > stopScanDeadline){
-				app_state = States::STOPING_STOP_SCAN;
+				app_state = States::STOPPING_STOP_SCAN;
 			}
 		}
-		else if(app_state == States::STOPING_STOP_SCAN)
+		else if(app_state == States::STOPPING_STOP_SCAN)
 		{
 			bool savingDone = saveChunkToDisk(stopScanDirectory, chunksInExperimentCS + chunksInExperimentSS);
 			if (savingDone)
