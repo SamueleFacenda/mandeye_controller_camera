@@ -5,6 +5,7 @@
 #include <mutex>
 
 #include "clients/TimeStampReceiver.h"
+#include "clients/LoggerClient.h"
 #include "clients/SaveChunkInFileClient.h"
 #include "minmea.h"
 #include "thread"
@@ -14,7 +15,7 @@ namespace mandeye
 {
 
 
-class GNSSClient : public mandeye_utils::TimeStampReceiver, public mandeye_utils::SaveChunkInFileClient
+class GNSSClient : public mandeye_utils::TimeStampReceiver, public mandeye_utils::SaveChunkInFileClient, public mandeye_utils::LoggerClient
 {
 private:
 	void printBufferToFileString(std::stringstream& fss) override;
@@ -28,10 +29,10 @@ public:
 	bool startListener(const std::string& portName, int baudRate);
 	bool startListener();
 	//! Start logging into the buffers
-	void startLog();
+	void startLog() override;
 
 	//! Stop logging into the buffers
-	void stopLog();
+	void stopLog() override;
 
 	//! Retrieve all data from the buffer, in form of CSV lines
 	std::deque<std::string> retrieveData();

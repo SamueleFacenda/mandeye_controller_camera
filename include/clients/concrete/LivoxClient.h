@@ -2,6 +2,7 @@
 
 #include "clients/TimeStampProvider.h"
 #include "clients/SaveChunkToDirClient.h"
+#include "clients/LoggerClient.h"
 #include "clients/concrete/ImuFileSaver.h"
 #include "clients/concrete/LidarFileSaver.h"
 #include "json.hpp"
@@ -48,7 +49,7 @@ using LivoxIMUBuffer = std::deque<LivoxIMU>;
 using LivoxIMUBufferPtr = std::shared_ptr<std::deque<LivoxIMU>>;
 using LivoxIMUBufferConstPtr = std::shared_ptr<const std::deque<LivoxIMU>>;
 
-class LivoxClient : public mandeye_utils::SaveChunkToDirClient, public mandeye_utils::TimeStampProvider
+class LivoxClient : public mandeye_utils::SaveChunkToDirClient, public mandeye_utils::TimeStampProvider, public mandeye_utils::LoggerClient
 {
 public:
 	nlohmann::json produceStatus();
@@ -57,10 +58,10 @@ public:
 	bool startListener(const std::string& interfaceIp);
 
 	//! Start log to memory data from Lidar and IMU
-	void startLog();
+	void startLog() override;
 
 	//! Stops log to memory data from Lidar and IMU
-	void stopLog();
+	void stopLog() override;
 
 	std::pair<LivoxPointsBufferPtr, LivoxIMUBufferPtr> retrieveData();
 
