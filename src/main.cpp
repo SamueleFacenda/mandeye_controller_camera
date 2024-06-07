@@ -20,6 +20,8 @@
 #define MANDEYE_GNSS_UART ""
 // #define MANDEYE_GNSS_UART "/dev/ttyS0"
 
+using namespace mandeye;
+
 int main(int argc, char** argv)
 {
 	std::cout << "program: " << argv[0] << " v0.4" << std::endl;
@@ -40,16 +42,16 @@ int main(int argc, char** argv)
 
 	// Filesystem client initialization
 
-	mandeye::fileSystemClientPtr = std::make_shared<mandeye::FileSystemClient>(utils::getEnvString("MANDEYE_REPO", MANDEYE_REPO));
+	fileSystemClientPtr = std::make_shared<FileSystemClient>(utils::getEnvString("MANDEYE_REPO", MANDEYE_REPO));
 
 	// Initialize livox client (and also gnss connection) /////////////////////////////
 
 	std::thread thLivox([&]() {
 		{
-			std::lock_guard<std::mutex> l1(mandeye::livoxClientPtrLock);
-			mandeye::livoxClientPtr = std::make_shared<mandeye::LivoxClient>();
+			std::lock_guard<std::mutex> l1(livoxClientPtrLock);
+			livoxClientPtr = std::make_shared<LivoxClient>();
 		}
-		if(!mandeye::livoxClientPtr->startListener(utils::getEnvString("MANDEYE_LIVOX_LISTEN_IP", MANDEYE_LIVOX_LISTEN_IP))){
+		if(!livoxClientPtr->startListener(utils::getEnvString("MANDEYE_LIVOX_LISTEN_IP", MANDEYE_LIVOX_LISTEN_IP))){
 			lidar_error = true;
 		}
 
@@ -57,26 +59,26 @@ int main(int argc, char** argv)
         const std::string portName = utils::getEnvString("MANDEYE_GNSS_UART", MANDEYE_GNSS_UART);
         if (!portName.empty())
         {
-            mandeye::gnssClientPtr = std::make_shared<mandeye::GNSSClient>();
-            mandeye::gnssClientPtr->SetTimeStampProvider(mandeye::livoxClientPtr);
-            mandeye::gnssClientPtr->startListener(portName, 9600);
+            gnssClientPtr = std::make_shared<GNSSClient>();
+            gnssClientPtr->SetTimeStampProvider(std::dynamic_pointer_cast<mandeye_utils::TimeStampProvider>(livoxClientPtr));
+            gnssClientPtr->startListener(portName, 9600);
         }
-		mandeye::saveableClients.push_back(mandeye::livoxClientPtr);
-		mandeye::saveableClients.push_back(mandeye::gnssClientPtr);
+		saveableClients.push_back(std::dynamic_pointer_cast<mandeye_utils::SaveChunkToDirClient>(livoxClientPtr));
+		saveableClients.push_back(gnssClientPtr);
 	});
 
 
 	// Initialize the camera client /////////////////////////////////////////////////////
 
-	std::shared_ptr<mandeye::CamerasClient> camerasClientPtr = std::make_shared<mandeye::CamerasClient>(utils::getIntListFromEnvVar("MANDEYE_CAMERA_IDS","0"));
+	std::shared_ptr<CamerasClient> camerasClientPtr = std::make_shared<CamerasClient>(utils::getIntListFromEnvVar("MANDEYE_CAMERA_IDS","0"));
 	std::thread thCameras([&]() {
 		camerasClientPtr->receiveImages();
 	});
-	mandeye::saveableClients.push_back(camerasClientPtr);
+	saveableClients.push_back(camerasClientPtr);
 
 	// Initialize the state machine (the one that changes state and save readings to disk) ////
 
-	std::thread thStateMachine([&]() { mandeye::stateWatcher(); });
+	std::thread thStateMachine([&]() { stateWatcher(); });
 
 	// Initialize Gpio client (led and buttons) //////////////////////////////////////
 
@@ -85,16 +87,16 @@ int main(int argc, char** argv)
 		std::lock_guard<std::mutex> l2(mandeye::gpioClientPtrLock);
 		const bool simMode = utils::getEnvBool("MANDEYE_GPIO_SIM", MANDEYE_GPIO_SIM);
 		std::cout << "MANDEYE_GPIO_SIM : " << simMode << std::endl;
-		mandeye::gpioClientPtr = std::make_shared<mandeye::GpioClient>(simMode);
+		gpioClientPtr = std::make_shared<GpioClient>(simMode);
 		for(int i = 0; i < 3; i++)
 		{
-			utils::blinkLed(mandeye::GpioClient::LED::LED_GPIO_STOP_SCAN, 100ms);
-			utils::blinkLed(mandeye::GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, 100ms);
-			utils::blinkLed(mandeye::GpioClient::LED::LED_GPIO_COPY_DATA, 100ms);
+			utils::blinkLed(GpioClient::LED::LED_GPIO_STOP_SCAN, 100ms);
+			utils::blinkLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, 100ms);
+			utils::blinkLed(GpioClient::LED::LED_GPIO_COPY_DATA, 100ms);
 		}
 		std::cout << "GPIO Init done" << std::endl;
-		mandeye::gpioClientPtr->addButtonCallback(mandeye::GpioClient::BUTTON::BUTTON_STOP_SCAN, "BUTTON_STOP_SCAN", [&]() { mandeye::TriggerStopScan(); });
-		mandeye::gpioClientPtr->addButtonCallback(mandeye::GpioClient::BUTTON::BUTTON_CONTINOUS_SCANNING, "BUTTON_CONTINOUS_SCANNING", [&]() { mandeye::TriggerContinousScanning(); });
+		gpioClientPtr->addButtonCallback(GpioClient::BUTTON::BUTTON_STOP_SCAN, "BUTTON_STOP_SCAN", [&]() { TriggerStopScan(); });
+		gpioClientPtr->addButtonCallback(GpioClient::BUTTON::BUTTON_CONTINOUS_SCANNING, "BUTTON_CONTINOUS_SCANNING", [&]() { TriggerContinousScanning(); });
 	});
 
 	// Main cycle (cli interface) //////////////////////////////////////////////
@@ -105,7 +107,7 @@ int main(int argc, char** argv)
 		std::cin.get(ch);
 
 		if (lidar_error) { // loop guard clause
-			mandeye::app_state = mandeye::States::LIDAR_ERROR;
+			app_state = States::LIDAR_ERROR;
 			std::cout << "lidar error" << std::endl;
 			std::this_thread::sleep_for(1000ms);
 			continue; // skip the rest
@@ -114,13 +116,13 @@ int main(int argc, char** argv)
 		std::cout << "Press q -> quit, s -> start scan , e -> end scan" << std::endl;
 		switch(ch) {
 		case 's':
-			if(mandeye::StartScan())
+			if(StartScan())
 			{
 				std::cout << "start scan success!" << std::endl;
 			}
 			break;
 		case 'e':
-			if(mandeye::StopScan())
+			if(StopScan())
 			{
 				std::cout << "stop scan success!" << std::endl;
 			}
@@ -135,7 +137,7 @@ int main(int argc, char** argv)
 
 	// Stop and join everyone
 
-	mandeye::isRunning.store(false); // stop the state machine
+	isRunning.store(false); // stop the state machine
 	server->shutdown(); // http server stop
 
 	std::cout << "joining Pistache thread" << std::endl;

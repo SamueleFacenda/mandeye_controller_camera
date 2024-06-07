@@ -10,7 +10,7 @@
 namespace mandeye_utils
 {
 
-class SaveChunkInFileClient:SaveChunkToDirClient
+class SaveChunkInFileClient: public SaveChunkToDirClient
 {
 public:
 	void saveChunkToDirectory(const std::filesystem::path& directory, int chunk) override;

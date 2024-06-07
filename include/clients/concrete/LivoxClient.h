@@ -48,7 +48,7 @@ using LivoxIMUBuffer = std::deque<LivoxIMU>;
 using LivoxIMUBufferPtr = std::shared_ptr<std::deque<LivoxIMU>>;
 using LivoxIMUBufferConstPtr = std::shared_ptr<const std::deque<LivoxIMU>>;
 
-class LivoxClient : public mandeye_utils::TimeStampProvider, public mandeye_utils::SaveChunkToDirClient
+class LivoxClient : public mandeye_utils::SaveChunkToDirClient, public mandeye_utils::TimeStampProvider
 {
 public:
 	nlohmann::json produceStatus();
