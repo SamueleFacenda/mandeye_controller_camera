@@ -44,7 +44,6 @@ const std::unordered_map<int32_t, char*> WorkModeToStr{
 using LivoxPointsBuffer = std::deque<LivoxPoint>;
 using LivoxPointsBufferPtr = std::shared_ptr<std::deque<LivoxPoint>>;
 using LivoxPointsBufferConstPtr = std::shared_ptr<const std::deque<LivoxPoint>>;
-
 using LivoxIMUBuffer = std::deque<LivoxIMU>;
 using LivoxIMUBufferPtr = std::shared_ptr<std::deque<LivoxIMU>>;
 using LivoxIMUBufferConstPtr = std::shared_ptr<const std::deque<LivoxIMU>>;

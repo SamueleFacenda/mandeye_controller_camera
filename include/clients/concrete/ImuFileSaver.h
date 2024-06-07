@@ -1,7 +1,3 @@
-//
-// Created by samu on 06/06/24.
-//
-
 #ifndef MANDEYE_MULTISENSOR_IMUFILESAVER_H
 #define MANDEYE_MULTISENSOR_IMUFILESAVER_H
 

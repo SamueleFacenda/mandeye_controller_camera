@@ -59,8 +59,7 @@ add_executable(control_program
         src/clients/concrete/CamerasClient.cpp
         src/clients/concrete/ImuFileSaver.cpp
         src/clients/SaveChunkInFileClient.cpp
-        src/clients/concrete/LidarFileSaver.cpp
-        include/clients/LoggerClient.h)
+        src/clients/concrete/LidarFileSaver.cpp)
 target_include_directories(control_program
         PUBLIC include
         SYSTEM ${OpenCV_INCLUDE_DIRS})

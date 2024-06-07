@@ -1,7 +1,3 @@
-//
-// Created by samu on 06/06/24.
-//
-
 #include "clients/concrete/ImuFileSaver.h"
 
 namespace mandeye_utils
@@ -10,6 +6,7 @@ namespace mandeye_utils
 void ImuFileSaver::setBuffer(const mandeye::LivoxIMUBufferPtr& inBuf) {
 	buffer = inBuf;
 }
+
 void ImuFileSaver::printBufferToFileString(std::stringstream& fss) {
 	for(const auto& p : *buffer)
 	{
