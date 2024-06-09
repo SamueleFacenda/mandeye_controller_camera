@@ -6,7 +6,7 @@ sudo apt install git build-essential rapidjson-dev cmake
 # USB MOUNT
 
 ```bash
-sudo apt install git debhelper build-essential ntfs-3g exfat-fuse exfat-clients usbmount
+sudo apt install git debhelper build-essential ntfs-3g exfat-fuse exfat-utils usbmount
 ```
 
 Confiuguration
