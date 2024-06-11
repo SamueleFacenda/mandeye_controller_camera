@@ -19,6 +19,7 @@ std::shared_ptr<FileSystemClient> fileSystemClientPtr;
 States app_state{States::WAIT_FOR_RESOURCES};
 std::vector<std::shared_ptr<mandeye_utils::SaveChunkToDirClient>> saveableClients;
 std::vector<std::shared_ptr<mandeye_utils::LoggerClient>> loggerClients;
+std::vector<std::shared_ptr<mandeye_utils::JsonStateProducer>> jsonReportProducerClients;
 
 std::string produceReport()
 {
@@ -26,30 +27,11 @@ std::string produceReport()
 	json j;
 	j["name"] = "Mandye";
 	j["state"] = StatesToString.at(app_state);
-	if(livoxClientPtr)
-	{
-		j["livox"] = livoxClientPtr->produceStatus();
-	}
-	else
-	{
-		j["livox"] = {};
-	}
+	j["livox"] = {};
+	j["gnss"] = {};
 
-	if(gpioClientPtr)
-	{
-		j["gpio"] = gpioClientPtr->produceStatus();
-	}
-
-	if(fileSystemClientPtr)
-	{
-		j["fs"] = fileSystemClientPtr->produceStatus();
-	}
-	if(gnssClientPtr)
-	{
-		j["gnss"] = gnssClientPtr->produceStatus();
-	}else{
-		j["gnss"] = {};
-	}
+	for (auto& client : jsonReportProducerClients)
+		j[client->getJsonName()] = client->produceStatus();
 
 	std::ostringstream s;
 	s << std::setw(4) << j;

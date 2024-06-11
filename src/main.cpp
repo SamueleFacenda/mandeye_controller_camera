@@ -43,6 +43,7 @@ int main(int argc, char** argv)
 	// Filesystem client initialization
 
 	fileSystemClientPtr = std::make_shared<FileSystemClient>(utils::getEnvString("MANDEYE_REPO", MANDEYE_REPO));
+	jsonReportProducerClients.push_back(fileSystemClientPtr);
 
 	// Initialize livox client (and also gnss connection) /////////////////////////////
 
@@ -63,10 +64,13 @@ int main(int argc, char** argv)
             gnssClientPtr->SetTimeStampProvider(std::dynamic_pointer_cast<mandeye_utils::TimeStampProvider>(livoxClientPtr));
             gnssClientPtr->startListener(portName, 9600);
         }
+
 		saveableClients.push_back(std::dynamic_pointer_cast<mandeye_utils::SaveChunkToDirClient>(livoxClientPtr));
 		loggerClients.push_back(std::dynamic_pointer_cast<mandeye_utils::LoggerClient>(livoxClientPtr));
+		jsonReportProducerClients.push_back(std::dynamic_pointer_cast<mandeye_utils::JsonStateProducer>(livoxClientPtr));
 		saveableClients.push_back(gnssClientPtr);
 		loggerClients.push_back(gnssClientPtr);
+		jsonReportProducerClients.push_back(livoxClientPtr);
 	});
 
 
@@ -100,6 +104,8 @@ int main(int argc, char** argv)
 		std::cout << "GPIO Init done" << std::endl;
 		gpioClientPtr->addButtonCallback(GpioClient::BUTTON::BUTTON_STOP_SCAN, "BUTTON_STOP_SCAN", [&]() { TriggerStopScan(); });
 		gpioClientPtr->addButtonCallback(GpioClient::BUTTON::BUTTON_CONTINOUS_SCANNING, "BUTTON_CONTINOUS_SCANNING", [&]() { TriggerContinousScanning(); });
+
+		jsonReportProducerClients.push_back(gpioClientPtr);
 	});
 
 	// Main cycle (cli interface) //////////////////////////////////////////////

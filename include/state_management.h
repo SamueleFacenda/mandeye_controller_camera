@@ -50,7 +50,7 @@ extern std::shared_ptr<GpioClient> gpioClientPtr;
 extern std::shared_ptr<FileSystemClient> fileSystemClientPtr;
 extern std::vector<std::shared_ptr<mandeye_utils::SaveChunkToDirClient>> saveableClients;
 extern std::vector<std::shared_ptr<mandeye_utils::LoggerClient>> loggerClients;
-
+extern std::vector<std::shared_ptr<mandeye_utils::JsonStateProducer>> jsonReportProducerClients;
 
 extern States app_state;
 
