@@ -9,7 +9,6 @@ using namespace cv;
 CamerasClient::CamerasClient(const std::vector<int>& cameraIndexes) {
 	for(int index: cameraIndexes)
 		initializeVideoCapture(index);
-
 }
 
 void CamerasClient::initializeVideoCapture(int index) {
@@ -72,6 +71,11 @@ void CamerasClient::receiveImages() {
 	double lastTimestamp = GetTimeStamp(), currentTimestamp;
 	std::vector<Mat> currentImages;
 	while(isRunning) {
+		if (!isLogging.load()) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			continue; // do not waste CPU time if we are not logging
+		}
+
 		// check for the timestamp update (when a pointcloud is received)
 		// should happen 10 times per second (I think that the cameras are faster)
 		// When the timestamp is updated I add the latest images to the buffer
@@ -94,6 +98,13 @@ void CamerasClient::addImagesToBuffer(const std::vector<Mat>& images, double tim
 		tmp.image = images[i];
 		buffers[i].push_back(tmp);
 	}
+}
+
+void CamerasClient::startLog() {
+	isLogging.store(true);
+}
+void CamerasClient::stopLog() {
+	isLogging.store(false);
 }
 
 } // namespace mandeye

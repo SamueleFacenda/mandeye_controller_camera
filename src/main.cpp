@@ -77,6 +77,7 @@ int main(int argc, char** argv)
 		camerasClientPtr->receiveImages();
 	});
 	saveableClients.push_back(camerasClientPtr);
+	loggerClients.push_back(camerasClientPtr);
 
 	// Initialize the state machine (the one that changes state and save readings to disk) ////
 
