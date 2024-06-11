@@ -8,6 +8,8 @@
 #include "clients/concrete/LivoxClient.h"
 #include "utils/save_laz.h"
 #include <iostream>
+#include <shared_mutex>
+#include <latch>
 #include <string>
 
 namespace mandeye
@@ -42,15 +44,16 @@ const std::map<States, std::string> StatesToString{
 };
 
 extern std::atomic<bool> isRunning;
-extern std::mutex livoxClientPtrLock;
 extern std::shared_ptr<LivoxClient> livoxClientPtr;
-extern std::shared_ptr<GNSSClient> gnssClientPtr;
-extern std::mutex gpioClientPtrLock;
 extern std::shared_ptr<GpioClient> gpioClientPtr;
 extern std::shared_ptr<FileSystemClient> fileSystemClientPtr;
 extern std::vector<std::shared_ptr<mandeye_utils::SaveChunkToDirClient>> saveableClients;
 extern std::vector<std::shared_ptr<mandeye_utils::LoggerClient>> loggerClients;
 extern std::vector<std::shared_ptr<mandeye_utils::JsonStateProducer>> jsonReportProducerClients;
+extern std::shared_mutex clientsMutex; // only used in initialization
+extern std::shared_lock<std::shared_mutex> clientsReadLock; // can be used when accessing clients lists, but they are safe now
+extern std::unique_lock<std::shared_mutex> clientsWriteLock;
+extern std::latch initializationLatch;
 
 extern States app_state;
 

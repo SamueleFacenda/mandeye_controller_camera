@@ -22,76 +22,71 @@
 
 using namespace mandeye;
 
-int main(int argc, char** argv)
-{
-	std::cout << "program: " << argv[0] << " v0.4" << std::endl;
-	bool lidar_error = false;
+using threadMap = std::unordered_map<std::string,std::shared_ptr<std::thread>>;
 
-	// Initialize pistache server (report web interface) /////////////////////////////
-	using namespace Pistache;
-
-	Address addr(Ipv4::any(), SERVER_PORT);
-
-	auto server = std::make_shared<Http::Endpoint>(addr);
-	std::thread http_thread([&]() {
-		auto opts = Http::Endpoint::options().threads(2);
-		server->init(opts);
-		server->setHandler(Http::make_handler<PistacheServerHandler>());
-		server->serve();
+void initializeCameraClientThread(threadMap& threads) {
+	std::shared_ptr<CamerasClient> camerasClientPtr = std::make_shared<CamerasClient>(utils::getIntListFromEnvVar("MANDEYE_CAMERA_IDS","0"));
+	std::shared_ptr<std::thread> thCameras = std::make_shared<std::thread>([&]() {
+		camerasClientPtr->receiveImages();
 	});
+	{
+		std::lock_guard<std::unique_lock<std::shared_mutex>> l1(clientsWriteLock);
+		saveableClients.push_back(camerasClientPtr);
+		loggerClients.push_back(camerasClientPtr);
+	}
 
-	// Filesystem client initialization
+	threads["Cameras Client"] = thCameras;
+	initializationLatch.count_down();
+}
 
-	fileSystemClientPtr = std::make_shared<FileSystemClient>(utils::getEnvString("MANDEYE_REPO", MANDEYE_REPO));
-	jsonReportProducerClients.push_back(fileSystemClientPtr);
+void initializeStateMachineThread(threadMap& threads) {
+	std::shared_ptr<std::thread> thStateMachine = std::make_shared<std::thread>([&]() { stateWatcher(); });
+	threads["State Machine"] = thStateMachine;
+}
 
-	// Initialize livox client (and also gnss connection) /////////////////////////////
-
-	std::thread thLivox([&]() {
-		{
-			std::lock_guard<std::mutex> l1(livoxClientPtrLock);
-			livoxClientPtr = std::make_shared<LivoxClient>();
-		}
+void initializeLivoxThreadAndGnss(threadMap& threads, std::atomic<bool>& lidar_error) {
+	std::shared_ptr<std::thread> thLivox = std::make_shared<std::thread>([&]() {
+		livoxClientPtr = std::make_shared<LivoxClient>();
 		if(!livoxClientPtr->startListener(utils::getEnvString("MANDEYE_LIVOX_LISTEN_IP", MANDEYE_LIVOX_LISTEN_IP))){
-			lidar_error = true;
+			lidar_error.store(true);
 		}
 
-		// initialize in this thread to prevent initialization fiasco
-        const std::string portName = utils::getEnvString("MANDEYE_GNSS_UART", MANDEYE_GNSS_UART);
-        if (!portName.empty())
-        {
-            gnssClientPtr = std::make_shared<GNSSClient>();
-            gnssClientPtr->SetTimeStampProvider(std::dynamic_pointer_cast<mandeye_utils::TimeStampProvider>(livoxClientPtr));
-            gnssClientPtr->startListener(portName, 9600);
-        }
+		// initialize gnss client in this thread to prevent initialization fiasco
+		const std::string portName = utils::getEnvString("MANDEYE_GNSS_UART", MANDEYE_GNSS_UART);
+		std::shared_ptr<GNSSClient> gnssClientPtr;
+		if (!portName.empty())
+		{
+			gnssClientPtr = std::make_shared<GNSSClient>();
+			gnssClientPtr->SetTimeStampProvider(std::dynamic_pointer_cast<mandeye_utils::TimeStampProvider>(livoxClientPtr));
+			gnssClientPtr->startListener(portName, 9600);
+		}
 
+		// acquire write lock and add clients
+		std::lock_guard<std::unique_lock<std::shared_mutex>> l1(clientsWriteLock);
 		saveableClients.push_back(std::dynamic_pointer_cast<mandeye_utils::SaveChunkToDirClient>(livoxClientPtr));
 		loggerClients.push_back(std::dynamic_pointer_cast<mandeye_utils::LoggerClient>(livoxClientPtr));
 		jsonReportProducerClients.push_back(std::dynamic_pointer_cast<mandeye_utils::JsonStateProducer>(livoxClientPtr));
+		initializationLatch.count_down();
+
 		saveableClients.push_back(gnssClientPtr);
 		loggerClients.push_back(gnssClientPtr);
 		jsonReportProducerClients.push_back(livoxClientPtr);
+		initializationLatch.count_down();
 	});
+	threads["Livox"] = thLivox;
+}
 
+void initializeFileSystemClient() {
+	fileSystemClientPtr = std::make_shared<FileSystemClient>(utils::getEnvString("MANDEYE_REPO", MANDEYE_REPO));
+	{
+		std::lock_guard<std::unique_lock<std::shared_mutex>> l1(clientsWriteLock);
+		jsonReportProducerClients.push_back(fileSystemClientPtr);
+	}
+}
 
-	// Initialize the camera client /////////////////////////////////////////////////////
-
-	std::shared_ptr<CamerasClient> camerasClientPtr = std::make_shared<CamerasClient>(utils::getIntListFromEnvVar("MANDEYE_CAMERA_IDS","0"));
-	std::thread thCameras([&]() {
-		camerasClientPtr->receiveImages();
-	});
-	saveableClients.push_back(camerasClientPtr);
-	loggerClients.push_back(camerasClientPtr);
-
-	// Initialize the state machine (the one that changes state and save readings to disk) ////
-
-	std::thread thStateMachine([&]() { stateWatcher(); });
-
-	// Initialize Gpio client (led and buttons) //////////////////////////////////////
-
+void initializeGpioClientThread(threadMap& threads) {
 	using namespace std::chrono_literals;
-	std::thread thGpio([&]() {
-		std::lock_guard<std::mutex> l2(mandeye::gpioClientPtrLock);
+	std::shared_ptr<std::thread> thGpio = std::make_shared<std::thread>([&]() {
 		const bool simMode = utils::getEnvBool("MANDEYE_GPIO_SIM", MANDEYE_GPIO_SIM);
 		std::cout << "MANDEYE_GPIO_SIM : " << simMode << std::endl;
 		gpioClientPtr = std::make_shared<GpioClient>(simMode);
@@ -105,17 +100,51 @@ int main(int argc, char** argv)
 		gpioClientPtr->addButtonCallback(GpioClient::BUTTON::BUTTON_STOP_SCAN, "BUTTON_STOP_SCAN", [&]() { TriggerStopScan(); });
 		gpioClientPtr->addButtonCallback(GpioClient::BUTTON::BUTTON_CONTINOUS_SCANNING, "BUTTON_CONTINOUS_SCANNING", [&]() { TriggerContinousScanning(); });
 
+		std::lock_guard<std::unique_lock<std::shared_mutex>> l1(clientsWriteLock);
 		jsonReportProducerClients.push_back(gpioClientPtr);
+
+		initializationLatch.count_down();
 	});
+	threads["Gpio"] = thGpio;
+}
 
-	// Main cycle (cli interface) //////////////////////////////////////////////
+void initializePistacheServerThread(threadMap& threads, std::shared_ptr<Pistache::Http::Endpoint>& server) {
+	using namespace Pistache;
 
+	Address addr(Ipv4::any(), SERVER_PORT);
+	server = std::make_shared<Http::Endpoint>(addr);
+
+	std::shared_ptr<std::thread> http_thread = std::make_shared<std::thread>([&]() {
+		auto opts = Http::Endpoint::options().threads(2);
+		server->init(opts);
+		server->setHandler(Http::make_handler<PistacheServerHandler>());
+		server->serve();
+	});
+	threads["Pistache server"] = http_thread;
+}
+
+int main(int argc, char** argv)
+{
+	std::cout << "program: " << argv[0] << " v0.4" << std::endl;
+	std::atomic<bool> lidar_error = false;
+	std::unordered_map<std::string,std::shared_ptr<std::thread>> threadsWithNames;
+	std::shared_ptr<Pistache::Http::Endpoint> server;
+
+	initializePistacheServerThread(threadsWithNames, server);
+	initializeFileSystemClient();
+	initializeLivoxThreadAndGnss(threadsWithNames, lidar_error);
+	initializeCameraClientThread(threadsWithNames);
+	initializeStateMachineThread(threadsWithNames);
+	initializeGpioClientThread(threadsWithNames);
+
+	// Main cycle (cli interface)
+	using namespace std::chrono_literals;
 	char ch;
 	do {
 		std::this_thread::sleep_for(1000ms);
 		std::cin.get(ch);
 
-		if (lidar_error) { // loop guard clause
+		if (lidar_error.load()) { // loop guard clause
 			app_state = States::LIDAR_ERROR;
 			std::cout << "lidar error" << std::endl;
 			std::this_thread::sleep_for(1000ms);
@@ -146,20 +175,13 @@ int main(int argc, char** argv)
 
 	// Stop and join everyone
 
-	isRunning.store(false); // stop the state machine
+	isRunning.store(false); // stop state machine and cameras
 	server->shutdown(); // http server stop
 
-	std::cout << "joining Pistache thread" << std::endl;
-	http_thread.join();
-
-	std::cout << "joining thStateMachine" << std::endl;
-	thStateMachine.join();
-
-	std::cout << "joining thLivox" << std::endl;
-	thLivox.join();
-
-	std::cout << "joining thGpio" << std::endl;
-	thGpio.join();
+	for(const auto& [name, thread]: threadsWithNames) {
+		std::cout << "joining " << name << " thread" << std::endl;
+		thread->join();
+	}
 
 	std::cout << "Done" << std::endl;
 	return 0;

@@ -10,16 +10,18 @@ namespace mandeye
 {
 
 std::atomic<bool> isRunning{true};
-std::mutex livoxClientPtrLock;
 std::shared_ptr<LivoxClient> livoxClientPtr;
-std::shared_ptr<GNSSClient> gnssClientPtr;
-std::mutex gpioClientPtrLock;
 std::shared_ptr<GpioClient> gpioClientPtr;
 std::shared_ptr<FileSystemClient> fileSystemClientPtr;
 States app_state{States::WAIT_FOR_RESOURCES};
 std::vector<std::shared_ptr<mandeye_utils::SaveChunkToDirClient>> saveableClients;
 std::vector<std::shared_ptr<mandeye_utils::LoggerClient>> loggerClients;
 std::vector<std::shared_ptr<mandeye_utils::JsonStateProducer>> jsonReportProducerClients;
+std::shared_mutex clientsMutex; // only used in initialization
+std::shared_lock<std::shared_mutex> clientsReadLock = std::shared_lock<std::shared_mutex>(clientsMutex);
+std::unique_lock<std::shared_mutex> clientsWriteLock = std::unique_lock<std::shared_mutex>(clientsMutex);
+std::latch initializationLatch{4}; // there are `n` initialization steps: gnss client, gpio client, livox client, camera client
+
 
 std::string produceReport()
 {
@@ -153,9 +155,8 @@ void stateWatcher()
 		else if(app_state == States::WAIT_FOR_RESOURCES)
 		{
 			std::this_thread::sleep_for(100ms);
-			std::lock_guard<std::mutex> l1(livoxClientPtrLock);
-			std::lock_guard<std::mutex> l2(gpioClientPtrLock);
-			if(gpioClientPtr && fileSystemClientPtr)
+			// initializationLatch.wait();
+			if (initializationLatch.try_wait())
 			{
 				app_state = States::IDLE;
 			}
