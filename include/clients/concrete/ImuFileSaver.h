@@ -2,15 +2,15 @@
 #define MANDEYE_MULTISENSOR_IMUFILESAVER_H
 
 #include "clients/SaveChunkInFileClient.h"
-#include "clients/concrete/LivoxClient.h"
+#include "livox_types.h"
 
 namespace mandeye_utils
 {
 
-class ImuFileSaver:public SaveChunkInFileClient
+class ImuFileSaver : public SaveChunkInFileClient
 {
 private:
-	mandeye::LivoxIMUBufferPtr buffer;
+	mandeye::LivoxIMUBufferPtr buffer{};
 
 public:
 	void setBuffer(const mandeye::LivoxIMUBufferPtr& inBuf);

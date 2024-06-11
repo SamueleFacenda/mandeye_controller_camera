@@ -48,18 +48,19 @@ find_package(OpenCV REQUIRED)
 add_executable(control_program
         ${PISTACHE_SRC}
         src/main.cpp
+        src/utils/utils.cpp
         src/utils/save_laz.cpp
         src/state_management.cpp
+        src/clients/TimeStampReceiver.cpp
+        src/clients/SaveChunkInFileClient.cpp
         src/clients/concrete/GnssClient.cpp
         src/clients/concrete/LivoxClient.cpp
         src/clients/concrete/GpioClient.cpp
         src/clients/concrete/FileSystemClient.cpp
-        src/clients/TimeStampReceiver.cpp
-        src/utils/utils.cpp
         src/clients/concrete/CamerasClient.cpp
         src/clients/concrete/ImuFileSaver.cpp
-        src/clients/SaveChunkInFileClient.cpp
         src/clients/concrete/LidarFileSaver.cpp)
+
 target_include_directories(control_program
         PUBLIC include
         SYSTEM ${OpenCV_INCLUDE_DIRS})

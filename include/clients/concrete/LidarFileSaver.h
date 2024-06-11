@@ -7,7 +7,7 @@
 namespace mandeye_utils
 {
 
-class LidarFileSaver : public mandeye_utils::SaveChunkInFileClient
+class LidarFileSaver : public SaveChunkInFileClient
 {
 private:
 	std::unordered_map<uint32_t, std::string> buffer;

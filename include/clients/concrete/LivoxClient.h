@@ -1,52 +1,19 @@
-#pragma once
+#ifndef MANDEYE_MULTISENSOR_LIVOXCLIENT_H
+#define MANDEYE_MULTISENSOR_LIVOXCLIENT_H
 
+#include "clients/LoggerClient.h"
 #include "clients/TimeStampProvider.h"
 #include "clients/SaveChunkToDirClient.h"
-#include "clients/LoggerClient.h"
 #include "clients/concrete/ImuFileSaver.h"
 #include "clients/concrete/LidarFileSaver.h"
-#include "json.hpp"
-#include "livox_lidar_def.h"
-#include <deque>
+#include "livox_types.h"
+#include <json.hpp>
+#include <livox_lidar_def.h>
 #include <mutex>
-#include <set>
 #include <thread>
+
 namespace mandeye
 {
-struct LivoxPoint
-{
-	LivoxLidarCartesianHighRawPoint point;
-	uint64_t timestamp;
-	uint8_t line_id;
-	uint16_t laser_id;
-};
-
-struct LivoxIMU
-{
-	LivoxLidarImuRawPoint point;
-	uint64_t timestamp;
-	uint16_t laser_id;
-};
-
-const std::unordered_map<int32_t, char*> WorkModeToStr{
-	{LivoxLidarWorkMode::kLivoxLidarNormal, "kLivoxLidarNormal"},
-	{LivoxLidarWorkMode::kLivoxLidarWakeUp, "kLivoxLidarWakeUp"},
-	{LivoxLidarWorkMode::kLivoxLidarSleep, "kLivoxLidarSleep"},
-	{LivoxLidarWorkMode::kLivoxLidarError, "kLivoxLidarError"},
-	{LivoxLidarWorkMode::kLivoxLidarPowerOnSelfTest, "kLivoxLidarPowerOnSelfTest"},
-	{LivoxLidarWorkMode::kLivoxLidarMotorStarting, "kLivoxLidarMotorStarting"},
-	{LivoxLidarWorkMode::kLivoxLidarMotorStoping, "kLivoxLidarMotorStoping"},
-	{LivoxLidarWorkMode::kLivoxLidarUpgrade, "kLivoxLidarUpgrade"},
-	{-1, "FailedToGetWorkMode"},
-
-};
-
-using LivoxPointsBuffer = std::deque<LivoxPoint>;
-using LivoxPointsBufferPtr = std::shared_ptr<std::deque<LivoxPoint>>;
-using LivoxPointsBufferConstPtr = std::shared_ptr<const std::deque<LivoxPoint>>;
-using LivoxIMUBuffer = std::deque<LivoxIMU>;
-using LivoxIMUBufferPtr = std::shared_ptr<std::deque<LivoxIMU>>;
-using LivoxIMUBufferConstPtr = std::shared_ptr<const std::deque<LivoxIMU>>;
 
 class LivoxClient : public mandeye_utils::SaveChunkToDirClient, public mandeye_utils::TimeStampProvider, public mandeye_utils::LoggerClient
 {
@@ -198,3 +165,5 @@ R"(
 	LidarInfoChangeCallback(const uint32_t handle, const LivoxLidarInfo* info, void* client_data);
 };
 } // namespace mandeye
+
+#endif //MANDEYE_MULTISENSOR_LIVOXCLIENT_H
