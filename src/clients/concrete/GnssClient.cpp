@@ -144,4 +144,9 @@ std::string GNSSClient::getFileIdentifier()
 	return "gnss";
 }
 
+std::string GNSSClient::getJsonName()
+{
+	return "gnss";
+}
+
 } // namespace mandeye

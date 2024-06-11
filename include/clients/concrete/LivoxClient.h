@@ -1,9 +1,10 @@
 #ifndef MANDEYE_MULTISENSOR_LIVOXCLIENT_H
 #define MANDEYE_MULTISENSOR_LIVOXCLIENT_H
 
+#include "clients/JsonStateProducer.h"
 #include "clients/LoggerClient.h"
-#include "clients/TimeStampProvider.h"
 #include "clients/SaveChunkToDirClient.h"
+#include "clients/TimeStampProvider.h"
 #include "clients/concrete/ImuFileSaver.h"
 #include "clients/concrete/LidarFileSaver.h"
 #include "livox_types.h"
@@ -15,10 +16,11 @@
 namespace mandeye
 {
 
-class LivoxClient : public mandeye_utils::SaveChunkToDirClient, public mandeye_utils::TimeStampProvider, public mandeye_utils::LoggerClient
+class LivoxClient : public mandeye_utils::SaveChunkToDirClient, public mandeye_utils::TimeStampProvider, public mandeye_utils::LoggerClient, public mandeye_utils::JsonStateProducer
 {
 public:
-	nlohmann::json produceStatus();
+	nlohmann::json produceStatus() override;
+	std::string getJsonName() override;
 
 	//! starts LivoxSDK2, interface is IP of listen interface (IP of network cards with Livox connected
 	bool startListener(const std::string& interfaceIp);

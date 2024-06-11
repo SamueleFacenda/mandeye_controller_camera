@@ -1,7 +1,8 @@
 #pragma once
+#include "clients/JsonStateProducer.h"
 #include "cppgpio/buttons.hpp"
 #include "cppgpio/output.hpp"
-#include "json.hpp"
+#include <json.hpp>
 #include <mutex>
 #include <unordered_map>
 namespace mandeye
@@ -9,7 +10,7 @@ namespace mandeye
 
 // forward declaration of cppgpio type that I want to keep inside compliation unit
 
-class GpioClient
+class GpioClient : public mandeye_utils::JsonStateProducer
 {
 public:
 	enum class LED
@@ -31,7 +32,8 @@ public:
 	GpioClient(bool sim);
 
 	//! serialize component state to API
-	nlohmann::json produceStatus();
+	nlohmann::json produceStatus() override;
+	std::string getJsonName() override;
 
 	//! set led to given state
 	void setLed(LED led, bool state);

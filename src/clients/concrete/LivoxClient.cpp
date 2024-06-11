@@ -526,4 +526,9 @@ void LivoxClient::saveChunkToDirectory(const std::filesystem::path& directory, i
 	saveLaz(lidarFilePath.string(), lidarBuffer);
 }
 
+std::string LivoxClient::getJsonName()
+{
+	return "livox";
+}
+
 } // namespace mandeye

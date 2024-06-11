@@ -110,4 +110,9 @@ void GpioClient::addButtonCallback(GpioClient::BUTTON btn,
 	(it->second)[callbackName] = callback;
 }
 
+std::string GpioClient::getJsonName()
+{
+	return "gpio";
+}
+
 } // namespace mandeye

@@ -1,6 +1,7 @@
 #pragma once
 
-#include "json.hpp"
+#include "clients/JsonStateProducer.h"
+#include <json.hpp>
 #include "livox_lidar_def.h"
 #include <deque>
 #include <mutex>
@@ -9,14 +10,15 @@
 namespace mandeye
 {
 
-class FileSystemClient
+class FileSystemClient : public mandeye_utils::JsonStateProducer
 {
 	constexpr static char manifestFilename[]{"mandala_manifest.txt"};
 	constexpr static char versionFilename[]{"version.txt"};
 
 public:
 	FileSystemClient(const std::string& repository);
-	nlohmann::json produceStatus();
+	nlohmann::json produceStatus() override;
+	std::string getJsonName() override;
 
 	//! Test is writable
 	float CheckAvailableSpace();

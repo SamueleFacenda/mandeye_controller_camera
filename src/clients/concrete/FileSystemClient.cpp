@@ -224,4 +224,9 @@ bool FileSystemClient::GetIsWritable()
 	}
 }
 
+std::string FileSystemClient::getJsonName()
+{
+	return "fs";
+}
+
 } // namespace mandeye

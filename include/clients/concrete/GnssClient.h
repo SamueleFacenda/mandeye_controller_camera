@@ -7,6 +7,7 @@
 #include "clients/TimeStampReceiver.h"
 #include "clients/LoggerClient.h"
 #include "clients/SaveChunkInFileClient.h"
+#include "clients/JsonStateProducer.h"
 #include "minmea.h"
 #include "thread"
 #include <SerialPort.h>
@@ -15,7 +16,7 @@ namespace mandeye
 {
 
 
-class GNSSClient : public mandeye_utils::TimeStampReceiver, public mandeye_utils::SaveChunkInFileClient, public mandeye_utils::LoggerClient
+class GNSSClient : public mandeye_utils::TimeStampReceiver, public mandeye_utils::SaveChunkInFileClient, public mandeye_utils::LoggerClient, public mandeye_utils::JsonStateProducer
 {
 private:
 	void printBufferToFileString(std::stringstream& fss) override;
@@ -23,7 +24,8 @@ private:
 	std::string getFileIdentifier() override;
 
 public:
-	nlohmann::json produceStatus();
+	nlohmann::json produceStatus() override;
+	std::string getJsonName() override;
 
 	//! Spins up a thread that reads from the serial port
 	bool startListener(const std::string& portName, int baudRate);
