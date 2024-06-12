@@ -1,7 +1,3 @@
-//
-// Created by samu on 06/06/24.
-//
-
 #include "clients/SaveChunkInFileClient.h"
 #include <fstream>
 #include <iostream>
@@ -23,6 +19,8 @@ void SaveChunkInFileClient::saveChunkToDirectory(const std::filesystem::path& di
 
 bool SaveChunkInFileClient::getSavingStream(std::ofstream& out, const std::string& directory, int chunkNumber)
 {
+	// auto filename = std::format("{}{:04d}.{}", getFileIdentifier(), chunkNumber, getFileExtension());
+	// not supported yet (livoxsdk uses old c++)
 	char filename[64];
 	snprintf(filename, 64, "%s%04d.%s", getFileIdentifier().c_str(), chunkNumber, getFileExtension().c_str());
 	using namespace std::filesystem;

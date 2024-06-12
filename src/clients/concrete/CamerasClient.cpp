@@ -91,6 +91,9 @@ void CamerasClient::receiveImages() {
 
 void CamerasClient::addImagesToBuffer(const std::vector<Mat>& images, double timestamp) {
 	std::lock_guard<std::mutex> lock(buffersMutex);
+	if(!isLogging.load())
+		return; // recheck (strange things can happen in multithreading)
+
 	stampedImage tmp;
 
 	tmp.timestamp = timestamp;
@@ -101,9 +104,13 @@ void CamerasClient::addImagesToBuffer(const std::vector<Mat>& images, double tim
 }
 
 void CamerasClient::startLog() {
+	std::lock_guard<std::mutex> lock(buffersMutex);
 	isLogging.store(true);
+	for(auto& buffer: buffers)
+		buffer.clear();
 }
 void CamerasClient::stopLog() {
+	std::lock_guard<std::mutex> lock(buffersMutex);
 	isLogging.store(false);
 }
 

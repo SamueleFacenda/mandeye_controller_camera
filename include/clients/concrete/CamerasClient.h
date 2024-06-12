@@ -30,7 +30,7 @@ class CamerasClient : public mandeye_utils::TimeStampReceiver, public mandeye_ut
 		std::atomic<bool> isLogging{false};
 
 		void initializeVideoCapture(int index);
-		void saveBufferToDirectory(const std::filesystem::path& dirName, std::deque<stampedImage>& buffer, int cameraId);
+		static void saveBufferToDirectory(const std::filesystem::path& dirName, std::deque<stampedImage>& buffer, int cameraId);
 		void addImagesToBuffer(const std::vector<cv::Mat>& images, double timestamp);
 		std::vector<cv::Mat> readSynchedImages();
 
