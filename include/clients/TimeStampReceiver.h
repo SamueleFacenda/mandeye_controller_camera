@@ -1,6 +1,6 @@
 #pragma once
 #include <memory>
-namespace mandeye_utils
+namespace mandeye
 {
 class TimeStampProvider;
 class TimeStampReceiver
@@ -14,4 +14,4 @@ protected:
 	//! The timestamp provider
 	std::shared_ptr<TimeStampProvider> m_timeStampProvider;
 };
-} // namespace mandeye_utils
+} // namespace mandeye

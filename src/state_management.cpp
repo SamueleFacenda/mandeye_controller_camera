@@ -14,9 +14,9 @@ std::shared_ptr<LivoxClient> livoxClientPtr;
 std::shared_ptr<GpioClient> gpioClientPtr;
 std::shared_ptr<FileSystemClient> fileSystemClientPtr;
 States app_state{States::WAIT_FOR_RESOURCES};
-std::vector<std::shared_ptr<mandeye_utils::SaveChunkToDirClient>> saveableClients;
-std::vector<std::shared_ptr<mandeye_utils::LoggerClient>> loggerClients;
-std::vector<std::shared_ptr<mandeye_utils::JsonStateProducer>> jsonReportProducerClients;
+std::vector<std::shared_ptr<SaveChunkToDirClient>> saveableClients;
+std::vector<std::shared_ptr<LoggerClient>> loggerClients;
+std::vector<std::shared_ptr<JsonStateProducer>> jsonReportProducerClients;
 std::shared_mutex clientsMutex; // only used in initialization
 std::shared_lock<std::shared_mutex> clientsReadLock = std::shared_lock<std::shared_mutex>(clientsMutex);
 std::unique_lock<std::shared_mutex> clientsWriteLock = std::unique_lock<std::shared_mutex>(clientsMutex);
@@ -89,7 +89,7 @@ bool saveChunkToDisk(const std::string& outDirectory, int chunk)
 		return false;
 	}
 	gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_COPY_DATA, true);
-	for(std::shared_ptr<mandeye_utils::SaveChunkToDirClient>& client: saveableClients)
+	for(std::shared_ptr<SaveChunkToDirClient>& client: saveableClients)
 		client->saveChunkToDirectory(outDirectory, chunk);
 
 	utils::syncDisk();

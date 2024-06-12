@@ -1,7 +1,7 @@
 #ifndef MANDEYE_MULTISENSOR_LOGGERCLIENT_H
 #define MANDEYE_MULTISENSOR_LOGGERCLIENT_H
 
-namespace mandeye_utils {
+namespace mandeye {
 
 class LoggerClient {
 public:

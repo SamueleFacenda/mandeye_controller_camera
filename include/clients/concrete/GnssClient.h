@@ -16,7 +16,7 @@ namespace mandeye
 {
 
 
-class GNSSClient : public mandeye_utils::TimeStampReceiver, public mandeye_utils::SaveChunkInFileClient, public mandeye_utils::LoggerClient, public mandeye_utils::JsonStateProducer
+class GNSSClient : public TimeStampReceiver, public SaveChunkInFileClient, public LoggerClient, public JsonStateProducer
 {
 private:
 	void printBufferToFileString(std::stringstream& fss) override;

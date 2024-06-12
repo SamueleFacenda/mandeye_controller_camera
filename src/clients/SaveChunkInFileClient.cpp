@@ -2,7 +2,7 @@
 #include <fstream>
 #include <iostream>
 
-namespace mandeye_utils
+namespace mandeye
 {
 
 void SaveChunkInFileClient::saveChunkToDirectory(const std::filesystem::path& directory, int chunk) {
@@ -35,4 +35,4 @@ bool SaveChunkInFileClient::getSavingStream(std::ofstream& out, const std::strin
 	return true;
 }
 
-} // namespace mandeye_utils
+} // namespace mandeye

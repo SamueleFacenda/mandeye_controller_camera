@@ -1,9 +1,9 @@
 #include "clients/concrete/ImuFileSaver.h"
 
-namespace mandeye_utils
+namespace mandeye
 {
 
-void ImuFileSaver::setBuffer(const mandeye::LivoxIMUBufferPtr& inBuf) {
+void ImuFileSaver::setBuffer(const LivoxIMUBufferPtr& inBuf) {
 	buffer = inBuf;
 }
 
@@ -27,4 +27,4 @@ std::string ImuFileSaver::getFileIdentifier()
 {
 	return "imu";
 }
-} // namespace mandeye_utils
+} // namespace mandeye

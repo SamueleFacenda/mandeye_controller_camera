@@ -4,16 +4,16 @@
 #include "clients/SaveChunkInFileClient.h"
 #include "livox_types.h"
 
-namespace mandeye_utils
+namespace mandeye
 {
 
 class ImuFileSaver : public SaveChunkInFileClient
 {
 private:
-	mandeye::LivoxIMUBufferPtr buffer{};
+	LivoxIMUBufferPtr buffer{};
 
 public:
-	void setBuffer(const mandeye::LivoxIMUBufferPtr& inBuf);
+	void setBuffer(const LivoxIMUBufferPtr& inBuf);
 
 protected:
 	void printBufferToFileString(std::stringstream& fss) override;
@@ -21,6 +21,6 @@ protected:
 	std::string getFileIdentifier() override;
 };
 
-} // namespace mandeye_utils
+} // namespace mandeye
 
 #endif //MANDEYE_MULTISENSOR_IMUFILESAVER_H

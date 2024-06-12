@@ -57,15 +57,15 @@ void initializeLivoxThreadAndGnss(threadMap& threads, std::atomic<bool>& lidar_e
 		if (!portName.empty())
 		{
 			gnssClientPtr = std::make_shared<GNSSClient>();
-			gnssClientPtr->SetTimeStampProvider(std::dynamic_pointer_cast<mandeye_utils::TimeStampProvider>(livoxClientPtr));
+			gnssClientPtr->SetTimeStampProvider(std::dynamic_pointer_cast<mandeye::TimeStampProvider>(livoxClientPtr));
 			gnssClientPtr->startListener(portName, 9600);
 		}
 
 		// acquire write lock and add clients
 		std::lock_guard<std::unique_lock<std::shared_mutex>> l1(clientsWriteLock);
-		saveableClients.push_back(std::dynamic_pointer_cast<mandeye_utils::SaveChunkToDirClient>(livoxClientPtr));
-		loggerClients.push_back(std::dynamic_pointer_cast<mandeye_utils::LoggerClient>(livoxClientPtr));
-		jsonReportProducerClients.push_back(std::dynamic_pointer_cast<mandeye_utils::JsonStateProducer>(livoxClientPtr));
+		saveableClients.push_back(std::dynamic_pointer_cast<mandeye::SaveChunkToDirClient>(livoxClientPtr));
+		loggerClients.push_back(std::dynamic_pointer_cast<mandeye::LoggerClient>(livoxClientPtr));
+		jsonReportProducerClients.push_back(std::dynamic_pointer_cast<mandeye::JsonStateProducer>(livoxClientPtr));
 		initializationLatch.count_down();
 
 		saveableClients.push_back(gnssClientPtr);

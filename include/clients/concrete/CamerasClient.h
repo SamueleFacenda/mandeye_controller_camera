@@ -15,7 +15,7 @@ struct stampedImage {
 	cv::Mat image;
 };
 
-class CamerasClient : public mandeye_utils::TimeStampReceiver, public mandeye_utils::SaveChunkToDirClient, public mandeye_utils::LoggerClient {
+class CamerasClient : public TimeStampReceiver, public SaveChunkToDirClient, public LoggerClient {
 	public:
 		explicit CamerasClient(const std::vector<int>& cameraIndexes);
 		void receiveImages();

@@ -16,7 +16,7 @@
 namespace mandeye
 {
 
-class LivoxClient : public mandeye_utils::SaveChunkToDirClient, public mandeye_utils::TimeStampProvider, public mandeye_utils::LoggerClient, public mandeye_utils::JsonStateProducer
+class LivoxClient : public SaveChunkToDirClient, public TimeStampProvider, public LoggerClient, public JsonStateProducer
 {
 public:
 	nlohmann::json produceStatus() override;
@@ -36,7 +36,7 @@ public:
 	//! Return current mapping from serial number to lidar id
 	std::unordered_map<uint32_t, std::string> getSerialNumberToLidarIdMapping() const;
 
-	// mandeye_utils::TimeStampProvider overrides ...
+	// mandeye::TimeStampProvider overrides ...
 	double getTimestamp() override;
 
 	// periodically ask lidars for status
@@ -79,8 +79,8 @@ private:
 	//! @param handle the handle to convert
 	uint16_t handleToLidarId(uint32_t handle) const;
 
-	mandeye_utils::ImuFileSaver imuFileSaver;
-	mandeye_utils::LidarFileSaver lidarFileSaver;
+	ImuFileSaver imuFileSaver;
+	LidarFileSaver lidarFileSaver;
 
 
 	static constexpr char config[] =

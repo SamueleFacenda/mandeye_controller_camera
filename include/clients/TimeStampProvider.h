@@ -1,6 +1,6 @@
 #pragma once
 
-namespace mandeye_utils
+namespace mandeye
 {
 //! Interface for a class that provides a timestamp
 class TimeStampProvider
@@ -8,4 +8,4 @@ class TimeStampProvider
 public:
 	virtual double getTimestamp() = 0;
 };
-} // namespace mandeye_utils
+} // namespace mandeye

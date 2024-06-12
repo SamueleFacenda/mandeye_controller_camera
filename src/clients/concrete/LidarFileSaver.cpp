@@ -1,6 +1,6 @@
 #include "clients/concrete/LidarFileSaver.h"
 
-namespace mandeye_utils
+namespace mandeye
 {
 
 void LidarFileSaver::printBufferToFileString(std::stringstream& fss) {

@@ -1,11 +1,13 @@
 #include "clients/TimeStampReceiver.h"
+
+#include <utility>
 #include "clients/TimeStampProvider.h"
-namespace mandeye_utils
+namespace mandeye
 {
 
 void TimeStampReceiver::SetTimeStampProvider(std::shared_ptr<TimeStampProvider> timeStampProvider)
 {
-	m_timeStampProvider = timeStampProvider;
+	m_timeStampProvider = std::move(timeStampProvider);
 }
 
 double TimeStampReceiver::GetTimeStamp()

@@ -4,7 +4,7 @@
 #include "clients/SaveChunkInFileClient.h"
 #include <unordered_map>
 
-namespace mandeye_utils
+namespace mandeye
 {
 
 class LidarFileSaver : public SaveChunkInFileClient

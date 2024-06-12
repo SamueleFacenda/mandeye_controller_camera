@@ -10,7 +10,7 @@
 namespace mandeye
 {
 
-class FileSystemClient : public mandeye_utils::JsonStateProducer
+class FileSystemClient : public JsonStateProducer
 {
 	constexpr static char manifestFilename[]{"mandala_manifest.txt"};
 	constexpr static char versionFilename[]{"version.txt"};

@@ -6,7 +6,7 @@
 #define MANDEYE_MULTISENSOR_SAVECHUNKTODIRCLIENT_H
 
 #include <filesystem>
-namespace mandeye_utils
+namespace mandeye
 {
 
 class SaveChunkToDirClient
@@ -15,6 +15,6 @@ public:
 	virtual void saveChunkToDirectory(const std::filesystem::path& directory, int chunk) = 0;
 };
 
-} // namespace mandeye_utils
+} // namespace mandeye
 
 #endif //MANDEYE_MULTISENSOR_SAVECHUNKTODIRCLIENT_H

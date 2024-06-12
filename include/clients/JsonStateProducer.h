@@ -3,7 +3,7 @@
 
 #include <json.hpp>
 
-namespace mandeye_utils
+namespace mandeye
 {
 
 class JsonStateProducer
@@ -13,6 +13,6 @@ public:
 	virtual std::string getJsonName() = 0;
 };
 
-} // namespace mandeye_utils
+} // namespace mandeye
 
 #endif //MANDEYE_MULTISENSOR_JSONSTATEPRODUCER_H

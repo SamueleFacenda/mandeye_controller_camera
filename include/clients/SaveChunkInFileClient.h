@@ -7,7 +7,7 @@
 
 #include "clients/SaveChunkToDirClient.h"
 
-namespace mandeye_utils
+namespace mandeye
 {
 
 class SaveChunkInFileClient: public SaveChunkToDirClient

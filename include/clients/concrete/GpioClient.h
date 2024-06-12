@@ -10,7 +10,7 @@ namespace mandeye
 
 // forward declaration of cppgpio type that I want to keep inside compliation unit
 
-class GpioClient : public mandeye_utils::JsonStateProducer
+class GpioClient : public JsonStateProducer
 {
 public:
 	enum class LED
