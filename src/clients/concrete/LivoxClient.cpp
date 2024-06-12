@@ -403,13 +403,13 @@ void LivoxClient::QueryInternalInfoCallback(livox_status status,
 	for(uint8_t i = 0; i < response->param_num; ++i)
 	{
 		LivoxLidarKeyValueParam* kv = (LivoxLidarKeyValueParam*)&response->data[off];
-		if(kv->key == kKeyLidarPointDataHostIPCfg)
+		if(kv->key == kKeyLidarPointDataHostIpCfg)
 		{
 			memcpy(host_point_ipaddr, &(kv->value[0]), sizeof(uint8_t) * 4);
 			memcpy(&(host_point_port), &(kv->value[4]), sizeof(uint16_t));
 			memcpy(&(lidar_point_port), &(kv->value[6]), sizeof(uint16_t));
 		}
-		else if(kv->key == kKeyLidarImuHostIPCfg)
+		else if(kv->key == kKeyLidarImuHostIpCfg)
 		{
 			memcpy(host_imu_ipaddr, &(kv->value[0]), sizeof(uint8_t) * 4);
 			memcpy(&(host_imu_data_port), &(kv->value[4]), sizeof(uint16_t));
