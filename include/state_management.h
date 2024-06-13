@@ -9,7 +9,7 @@
 #include "utils/save_laz.h"
 #include <iostream>
 #include <shared_mutex>
-#include <latch>
+#include <atomic>
 #include <string>
 
 namespace mandeye
@@ -53,7 +53,7 @@ extern std::vector<std::shared_ptr<JsonStateProducer>> jsonReportProducerClients
 extern std::shared_mutex clientsMutex; // only used in initialization
 extern std::shared_lock<std::shared_mutex> clientsReadLock; // can be used when accessing clients lists, but they are safe now
 extern std::unique_lock<std::shared_mutex> clientsWriteLock;
-extern std::latch initializationLatch;
+extern std::atomic<int> initializationLatch;
 
 extern States app_state;
 

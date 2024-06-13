@@ -36,7 +36,7 @@ void initializeCameraClientThread(threadMap& threads) {
 	}
 
 	threads["Cameras Client"] = thCameras;
-	initializationLatch.count_down();
+	initializationLatch--;
 }
 
 void initializeStateMachineThread(threadMap& threads) {
@@ -66,12 +66,12 @@ void initializeLivoxThreadAndGnss(threadMap& threads, std::atomic<bool>& lidar_e
 		saveableClients.push_back(std::dynamic_pointer_cast<mandeye::SaveChunkToDirClient>(livoxClientPtr));
 		loggerClients.push_back(std::dynamic_pointer_cast<mandeye::LoggerClient>(livoxClientPtr));
 		jsonReportProducerClients.push_back(std::dynamic_pointer_cast<mandeye::JsonStateProducer>(livoxClientPtr));
-		initializationLatch.count_down();
+		initializationLatch--;
 
 		saveableClients.push_back(gnssClientPtr);
 		loggerClients.push_back(gnssClientPtr);
 		jsonReportProducerClients.push_back(livoxClientPtr);
-		initializationLatch.count_down();
+		initializationLatch--;
 	});
 	threads["Livox"] = thLivox;
 }
@@ -103,7 +103,7 @@ void initializeGpioClientThread(threadMap& threads) {
 		std::lock_guard<std::unique_lock<std::shared_mutex>> l1(clientsWriteLock);
 		jsonReportProducerClients.push_back(gpioClientPtr);
 
-		initializationLatch.count_down();
+		initializationLatch--;
 	});
 	threads["Gpio"] = thGpio;
 }

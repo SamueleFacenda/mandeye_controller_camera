@@ -20,7 +20,7 @@ std::vector<std::shared_ptr<JsonStateProducer>> jsonReportProducerClients;
 std::shared_mutex clientsMutex; // only used in initialization
 std::shared_lock<std::shared_mutex> clientsReadLock = std::shared_lock<std::shared_mutex>(clientsMutex);
 std::unique_lock<std::shared_mutex> clientsWriteLock = std::unique_lock<std::shared_mutex>(clientsMutex);
-std::latch initializationLatch{4}; // there are `n` initialization steps: gnss client, gpio client, livox client, camera client
+std::atomic<int> initializationLatch{4}; // there are `n` initialization steps: gnss client, gpio client, livox client, camera client
 
 
 std::string produceReport()
@@ -155,8 +155,7 @@ void stateWatcher()
 		else if(app_state == States::WAIT_FOR_RESOURCES)
 		{
 			std::this_thread::sleep_for(100ms);
-			// initializationLatch.wait();
-			if (initializationLatch.try_wait())
+			if (initializationLatch.load() == 0)
 			{
 				app_state = States::IDLE;
 			}
