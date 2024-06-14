@@ -51,8 +51,6 @@ extern std::vector<std::shared_ptr<SaveChunkToDirClient>> saveableClients;
 extern std::vector<std::shared_ptr<LoggerClient>> loggerClients;
 extern std::vector<std::shared_ptr<JsonStateProducer>> jsonReportProducerClients;
 extern std::shared_mutex clientsMutex; // only used in initialization
-extern std::shared_lock<std::shared_mutex> clientsReadLock; // can be used when accessing clients lists, but they are safe now
-extern std::unique_lock<std::shared_mutex> clientsWriteLock;
 extern std::atomic<int> initializationLatch;
 
 extern States app_state;

@@ -18,8 +18,6 @@ std::vector<std::shared_ptr<SaveChunkToDirClient>> saveableClients;
 std::vector<std::shared_ptr<LoggerClient>> loggerClients;
 std::vector<std::shared_ptr<JsonStateProducer>> jsonReportProducerClients;
 std::shared_mutex clientsMutex; // only used in initialization
-std::shared_lock<std::shared_mutex> clientsReadLock = std::shared_lock<std::shared_mutex>(clientsMutex);
-std::unique_lock<std::shared_mutex> clientsWriteLock = std::unique_lock<std::shared_mutex>(clientsMutex);
 std::atomic<int> initializationLatch{4}; // there are `n` initialization steps: gnss client, gpio client, livox client, camera client
 
 

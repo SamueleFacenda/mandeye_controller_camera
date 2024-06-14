@@ -46,11 +46,10 @@ find_package(OpenCV REQUIRED)
 
 #executable
 add_executable(control_program
-        ${PISTACHE_SRC}
         src/main.cpp
+        src/state_management.cpp
         src/utils/utils.cpp
         src/utils/save_laz.cpp
-        src/state_management.cpp
         src/clients/TimeStampReceiver.cpp
         src/clients/SaveChunkInFileClient.cpp
         src/clients/concrete/GnssClient.cpp
@@ -66,8 +65,7 @@ target_include_directories(control_program
         SYSTEM ${OpenCV_INCLUDE_DIRS})
 
 set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -latomic")
-target_link_libraries(control_program pthread livox_lidar_sdk_static cppgpio-static pistache atomic laszip ${LIBSERIAL_LIBRARY} minea ${OpenCV_LIBS})
-#target_link_libraries(control_program pthread livox_lidar_sdk_static cppgpio-static atomic laszip)
+target_link_libraries(control_program livox_lidar_sdk_static cppgpio-static pistache atomic laszip ${LIBSERIAL_LIBRARY} minea ${OpenCV_LIBS})
 
 add_executable(led_demo src/demos/led_demo.cpp src/clients/concrete/GpioClient.cpp)
 target_include_directories(led_demo PRIVATE include)

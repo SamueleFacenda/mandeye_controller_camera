@@ -17,8 +17,7 @@
 #define MANDEYE_REPO "/media/usb/"
 #define MANDEYE_GPIO_SIM false
 #define SERVER_PORT 8003
-#define MANDEYE_GNSS_UART ""
-// #define MANDEYE_GNSS_UART "/dev/ttyS0"
+#define MANDEYE_GNSS_UART "/dev/ttyS0"
 
 using namespace mandeye;
 
@@ -30,18 +29,20 @@ void initializeCameraClientThread(threadMap& threads) {
 		camerasClientPtr->receiveImages();
 	});
 	{
-		std::lock_guard<std::unique_lock<std::shared_mutex>> l1(clientsWriteLock);
+		std::unique_lock<std::shared_mutex> lock(clientsMutex);
 		saveableClients.push_back(camerasClientPtr);
 		loggerClients.push_back(camerasClientPtr);
 	}
 
 	threads["Cameras Client"] = thCameras;
 	initializationLatch--;
+	std::cout << "Cameras Client initialized" << std::endl;
 }
 
 void initializeStateMachineThread(threadMap& threads) {
 	std::shared_ptr<std::thread> thStateMachine = std::make_shared<std::thread>([&]() { stateWatcher(); });
 	threads["State Machine"] = thStateMachine;
+	std::cout << "State Machine initialized" << std::endl;
 }
 
 void initializeLivoxThreadAndGnss(threadMap& threads, std::atomic<bool>& lidar_error) {
@@ -62,7 +63,7 @@ void initializeLivoxThreadAndGnss(threadMap& threads, std::atomic<bool>& lidar_e
 		}
 
 		// acquire write lock and add clients
-		std::lock_guard<std::unique_lock<std::shared_mutex>> l1(clientsWriteLock);
+		std::unique_lock<std::shared_mutex> lock(clientsMutex);
 		saveableClients.push_back(std::dynamic_pointer_cast<mandeye::SaveChunkToDirClient>(livoxClientPtr));
 		loggerClients.push_back(std::dynamic_pointer_cast<mandeye::LoggerClient>(livoxClientPtr));
 		jsonReportProducerClients.push_back(std::dynamic_pointer_cast<mandeye::JsonStateProducer>(livoxClientPtr));
@@ -72,6 +73,7 @@ void initializeLivoxThreadAndGnss(threadMap& threads, std::atomic<bool>& lidar_e
 		loggerClients.push_back(gnssClientPtr);
 		jsonReportProducerClients.push_back(livoxClientPtr);
 		initializationLatch--;
+		std::cout << "Livox and GNSS initialized" << std::endl;
 	});
 	threads["Livox"] = thLivox;
 }
@@ -79,9 +81,10 @@ void initializeLivoxThreadAndGnss(threadMap& threads, std::atomic<bool>& lidar_e
 void initializeFileSystemClient() {
 	fileSystemClientPtr = std::make_shared<FileSystemClient>(utils::getEnvString("MANDEYE_REPO", MANDEYE_REPO));
 	{
-		std::lock_guard<std::unique_lock<std::shared_mutex>> l1(clientsWriteLock);
+		std::unique_lock<std::shared_mutex> lock(clientsMutex);
 		jsonReportProducerClients.push_back(fileSystemClientPtr);
 	}
+	std::cout << "FileSystemClient initialized" << std::endl;
 }
 
 void initializeGpioClientThread(threadMap& threads) {
@@ -100,7 +103,7 @@ void initializeGpioClientThread(threadMap& threads) {
 		gpioClientPtr->addButtonCallback(GpioClient::BUTTON::BUTTON_STOP_SCAN, "BUTTON_STOP_SCAN", [&]() { TriggerStopScan(); });
 		gpioClientPtr->addButtonCallback(GpioClient::BUTTON::BUTTON_CONTINOUS_SCANNING, "BUTTON_CONTINOUS_SCANNING", [&]() { TriggerContinousScanning(); });
 
-		std::lock_guard<std::unique_lock<std::shared_mutex>> l1(clientsWriteLock);
+		std::unique_lock<std::shared_mutex> lock(clientsMutex);
 		jsonReportProducerClients.push_back(gpioClientPtr);
 
 		initializationLatch--;
@@ -118,6 +121,7 @@ void initializePistacheServerThread(threadMap& threads, std::shared_ptr<Pistache
 		auto opts = Http::Endpoint::options().threads(2);
 		server->init(opts);
 		server->setHandler(Http::make_handler<PistacheServerHandler>());
+		std::cout << "Starting Pistache server on port " << SERVER_PORT << std::endl;
 		server->serve();
 	});
 	threads["Pistache server"] = http_thread;
@@ -129,6 +133,7 @@ int main(int argc, char** argv)
 	std::atomic<bool> lidar_error = false;
 	std::unordered_map<std::string,std::shared_ptr<std::thread>> threadsWithNames;
 	std::shared_ptr<Pistache::Http::Endpoint> server;
+	std::cout << "Starting..." << std::endl;
 
 	initializePistacheServerThread(threadsWithNames, server);
 	initializeFileSystemClient();
@@ -139,10 +144,9 @@ int main(int argc, char** argv)
 
 	// Main cycle (cli interface)
 	using namespace std::chrono_literals;
-	char ch;
+	char ch = ' ';
 	do {
 		std::this_thread::sleep_for(1000ms);
-		std::cin.get(ch);
 
 		if (lidar_error.load()) { // loop guard clause
 			app_state = States::LIDAR_ERROR;
@@ -152,6 +156,7 @@ int main(int argc, char** argv)
 		}
 
 		std::cout << "Press q -> quit, s -> start scan , e -> end scan" << std::endl;
+		std::cin.get(ch);
 		switch(ch) {
 		case 's':
 			if(StartScan())
