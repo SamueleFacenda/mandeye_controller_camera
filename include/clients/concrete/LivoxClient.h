@@ -106,27 +106,6 @@ R"(
 			"log_data_ip" : "${HOSTIP}",
 			"log_data_port": 56501
 		}
-	},
-	"HAP": {
-		"lidar_net_info" : {
-			"cmd_data_port": 56000,
-			"push_msg_port": 0,
-			"point_data_port": 57000,
-			"imu_data_port": 58000,
-			"log_data_port": 59000
-		},
-		"host_net_info" : {
-			"cmd_data_ip" : "${HOSTIP}",
-			"cmd_data_port": 56000,
-			"push_msg_ip": "",
-			"push_msg_port": 0,
-			"point_data_ip": "${HOSTIP}",
-			"point_data_port": 57000,
-			"imu_data_ip" : "${HOSTIP}",
-			"imu_data_port": 58000,
-			"log_data_ip" : "",
-			"log_data_port": 59000
-		}
 	}
 }
 

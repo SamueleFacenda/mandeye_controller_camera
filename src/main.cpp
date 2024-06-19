@@ -24,7 +24,8 @@ using namespace mandeye;
 using threadMap = std::unordered_map<std::string,std::shared_ptr<std::thread>>;
 
 void initializeCameraClientThread(threadMap& threads) {
-	std::shared_ptr<CamerasClient> camerasClientPtr = std::make_shared<CamerasClient>(utils::getIntListFromEnvVar("MANDEYE_CAMERA_IDS","0"));
+	std::shared_ptr<CamerasClient> camerasClientPtr = std::make_shared<CamerasClient>(utils::getIntListFromEnvVar("MANDEYE_CAMERA_IDS",""));
+	camerasClientPtr->SetTimeStampProvider(std::dynamic_pointer_cast<mandeye::TimeStampProvider>(livoxClientPtr));
 	std::shared_ptr<std::thread> thCameras = std::make_shared<std::thread>([&]() {
 		camerasClientPtr->receiveImages();
 	});
@@ -57,9 +58,15 @@ void initializeLivoxThreadAndGnss(threadMap& threads, std::atomic<bool>& lidar_e
 		std::shared_ptr<GNSSClient> gnssClientPtr;
 		if (!portName.empty())
 		{
+			std::cout << "Initialize gnss" << std::endl;
 			gnssClientPtr = std::make_shared<GNSSClient>();
 			gnssClientPtr->SetTimeStampProvider(std::dynamic_pointer_cast<mandeye::TimeStampProvider>(livoxClientPtr));
 			gnssClientPtr->startListener(portName, 9600);
+
+			std::unique_lock<std::shared_mutex> lock(clientsMutex);
+			saveableClients.push_back(gnssClientPtr);
+			loggerClients.push_back(gnssClientPtr);
+			jsonReportProducerClients.push_back(livoxClientPtr);
 		}
 
 		// acquire write lock and add clients
@@ -67,11 +74,6 @@ void initializeLivoxThreadAndGnss(threadMap& threads, std::atomic<bool>& lidar_e
 		saveableClients.push_back(std::dynamic_pointer_cast<mandeye::SaveChunkToDirClient>(livoxClientPtr));
 		loggerClients.push_back(std::dynamic_pointer_cast<mandeye::LoggerClient>(livoxClientPtr));
 		jsonReportProducerClients.push_back(std::dynamic_pointer_cast<mandeye::JsonStateProducer>(livoxClientPtr));
-		initializationLatch--;
-
-		saveableClients.push_back(gnssClientPtr);
-		loggerClients.push_back(gnssClientPtr);
-		jsonReportProducerClients.push_back(livoxClientPtr);
 		initializationLatch--;
 		std::cout << "Livox and GNSS initialized" << std::endl;
 	});
@@ -131,16 +133,15 @@ int main(int argc, char** argv)
 {
 	std::cout << "program: " << argv[0] << " v0.4" << std::endl;
 	std::atomic<bool> lidar_error = false;
-	std::unordered_map<std::string,std::shared_ptr<std::thread>> threadsWithNames;
+	threadMap threadsWithNames;
 	std::shared_ptr<Pistache::Http::Endpoint> server;
-	std::cout << "Starting..." << std::endl;
 
 	initializePistacheServerThread(threadsWithNames, server);
 	initializeFileSystemClient();
 	initializeLivoxThreadAndGnss(threadsWithNames, lidar_error);
-	initializeCameraClientThread(threadsWithNames);
 	initializeStateMachineThread(threadsWithNames);
 	initializeGpioClientThread(threadsWithNames);
+	initializeCameraClientThread(threadsWithNames);
 
 	// Main cycle (cli interface)
 	using namespace std::chrono_literals;

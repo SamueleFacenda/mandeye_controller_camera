@@ -18,7 +18,7 @@ std::vector<std::shared_ptr<SaveChunkToDirClient>> saveableClients;
 std::vector<std::shared_ptr<LoggerClient>> loggerClients;
 std::vector<std::shared_ptr<JsonStateProducer>> jsonReportProducerClients;
 std::shared_mutex clientsMutex; // only used in initialization
-std::atomic<int> initializationLatch{4}; // there are `n` initialization steps: gnss client, gpio client, livox client, camera client
+std::atomic<int> initializationLatch{3}; // there are `n` initialization steps: gpio client, livox client + gnss, camera client
 
 
 std::string produceReport()
@@ -123,7 +123,7 @@ void stateWatcher()
 		app_state = States::USB_IO_ERROR;
 	}
 
-	while(isRunning)
+	while(isRunning.load())
 	{
 		if(oldState != app_state)
 		{

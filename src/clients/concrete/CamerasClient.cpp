@@ -20,7 +20,7 @@ void CamerasClient::initializeVideoCapture(int index) {
 		caps.pop_back();
 		return;
 	}
-
+	std::cout << "Initialized camera number " << index << std::endl;
 	std::deque<stampedImage> buffer;
 	buffers.push_back(buffer);
 }
