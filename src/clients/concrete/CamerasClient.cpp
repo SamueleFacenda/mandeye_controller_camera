@@ -35,18 +35,28 @@ void CamerasClient::saveChunkToDirectory(const std::filesystem::path& dirName, i
 		std::cerr << "Error creating directory '" << outDir << "'" << std::endl;
 		return; // do not clean up the buffers, keep images in memory
 	}
-	for(int i=0; i<buffers.size(); i++)
-		saveBufferToDirectory(outDir, buffers[i], i);
+	std::vector<std::deque<stampedImage>> buffersCopy;
+	{
+		std::lock_guard<std::mutex> lock(buffersMutex);
+		buffersCopy = buffers;
+		for(auto& buffer: buffers)
+			buffer.clear();
+	}
+	// std::cout << "Buffers size: " << buffersCopy[0].size() << std::endl;
+	for(int i=0; i<buffersCopy.size(); i++)
+		saveBufferToDirectory(outDir, buffersCopy[i], i);
 }
 
 void CamerasClient::saveBufferToDirectory(const std::filesystem::path& dirName, std::deque<stampedImage>& buffer, int cameraId) {
 	stampedImage tmp;
 	std::filesystem::path imagePath;
 	char filename[64];
+	int len = buffer.size(), i=0;
 	while(!buffer.empty()) {
 		tmp = buffer.front();
 		snprintf(filename, 64, "camera_%d_stamp_%d.png", cameraId, (int) (tmp.timestamp * 1e9));
 		imagePath = dirName / filename;
+		std::cout << "Saving image number " << i++ << "/" << len << " to " << imagePath << "\n";
 		imwrite(imagePath, tmp.image);
 		buffer.pop_front();
 	}
@@ -83,6 +93,7 @@ void CamerasClient::receiveImages() {
 		currentTimestamp = GetTimeStamp();
 
 		if (currentTimestamp != lastTimestamp) {
+			std::cout << "Timestamp updated: delay = " << (currentTimestamp - lastTimestamp) << " seconds\n";
 			lastTimestamp = currentTimestamp;
 			addImagesToBuffer(currentImages, lastTimestamp);
 		}
@@ -101,6 +112,7 @@ void CamerasClient::addImagesToBuffer(const std::vector<Mat>& images, double tim
 		tmp.image = images[i];
 		buffers[i].push_back(tmp);
 	}
+	std::cout << "Added images to buffer, current size: " << buffers[0].size() << std::endl;
 }
 
 void CamerasClient::startLog() {
