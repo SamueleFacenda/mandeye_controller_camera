@@ -26,6 +26,11 @@
               libserial
               rapidjson
               opencv
+              tbb
+            ];
+            cmakeFlags = [
+              "-DTBB_ROOT=${pkgs.tbb}"
+              "-DTBB_INCLUDE_DIR=${pkgs.tbb.dev}/include"
             ];
           };
           libserial = pkgs.stdenv.mkDerivation {
@@ -67,6 +72,7 @@
               self.packages.${system}.libserial
               rapidjson
               opencv
+              tbb
             ];
 
             # inherit (self.checks.${system}.pre-commit-check) shellHook;

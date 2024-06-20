@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.0.0)
 set(CMAKE_CXX_STANDARD 20)
+if(POLICY CMP0074)
+    cmake_policy(SET CMP0074 NEW)
+endif()
 
 project (mandeye_multisensor)
 
@@ -43,7 +46,7 @@ include_directories(3rd/minmea ${LIBSERIAL_INCLUDE_DIR})
 add_library(minea STATIC 3rd/minmea/minmea.c)
 
 find_package(OpenCV REQUIRED)
-find_package(TBB REQUIRED)
+find_package(TBB)
 
 #executable
 add_executable(control_program
