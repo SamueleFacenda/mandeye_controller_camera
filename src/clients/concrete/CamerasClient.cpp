@@ -9,14 +9,16 @@ using namespace cv;
 CamerasClient::CamerasClient(const std::vector<int>& cameraIndexes, const std::string& savingMediaPath)
 {
 	tmpDir = std::filesystem::path(savingMediaPath) / ".mandeye_cameras_tmp";
-	if (!std::filesystem::is_directory(tmpDir) && !std::filesystem::create_directory(tmpDir)) {
+	if (!std::filesystem::is_directory(tmpDir) && !std::filesystem::create_directories(tmpDir)) {
 		std::cerr << "Error creating directory '" << tmpDir << "'" << std::endl;
 	}
 	for(int index: cameraIndexes)
 		initializeVideoCapture(index);
 
-	tmpFiles.resize(caps.size());
-	buffers.resize(caps.size());
+	for(int i=0; i<buffers.size(); i++) {
+		VideoWriter tmp;
+		buffers.push_back(tmp);
+	}
 }
 
 void CamerasClient::initializeVideoCapture(int index) {
@@ -35,13 +37,12 @@ void CamerasClient::initializeVideoCapture(int index) {
 
 void CamerasClient::saveChunkToDirectory(const std::filesystem::path& dirName, int chunkNumber)
 {
-	{
-		std::lock_guard<std::mutex> lock(buffersMutex);
-		for(int i=0; i<buffers.size(); i++) {
-			buffers[i].release();
-			std::filesystem::rename(getTmpFilePath(i), getFinalFilePath(dirName, i, chunkNumber));
-			initializeVideoWriter(i);
-		}
+
+	std::lock_guard<std::mutex> lock(buffersMutex);
+	for(int i=0; i<buffers.size(); i++) {
+		buffers[i].release();
+		std::filesystem::rename(getTmpFilePath(i), getFinalFilePath(dirName, i, chunkNumber));
+		initializeVideoWriter(i);
 	}
 }
 
@@ -119,6 +120,7 @@ std::filesystem::path CamerasClient::getFinalFilePath(const std::filesystem::pat
 }
 
 void CamerasClient::initializeVideoWriter(int index) {
+	// h264 can be changed to something properly lossless or h265 (better encoding, x10/x20 encoding time)
 	buffers[index].open(getTmpFilePath(index), VideoWriter::fourcc('H','2','6','4'), 10, Size(1920, 1080));
 }
 

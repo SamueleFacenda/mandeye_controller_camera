@@ -25,7 +25,6 @@ class CamerasClient : public TimeStampReceiver, public SaveChunkToDirClient, pub
 
 	private:
 		std::filesystem::path tmpDir; // on the final media device
-		std::vector<std::filesystem::path> tmpFiles;
 		std::vector<cv::VideoCapture> caps;
 		std::mutex buffersMutex;
 		std::vector<cv::VideoWriter> buffers;

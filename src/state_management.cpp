@@ -10,6 +10,7 @@
 // in seconds
 #define STOP_SCAN_DURATION 5s
 #define CONTINOUS_SCAN_SAVE_INTERVAL 10s
+#define STOP_SCAN_DELAY 3s
 
 namespace mandeye
 {
@@ -239,7 +240,7 @@ void stateWatcher()
 				gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, false);
 			}
 
-			stopScanInitialDeadline = std::chrono::steady_clock::now() + 10s; // wait 10 seconds before starting
+			stopScanInitialDeadline = std::chrono::steady_clock::now() + STOP_SCAN_DELAY; // wait STOP_SCAN_DELAY before starting
 
 			stopScanDeadline = stopScanInitialDeadline + STOP_SCAN_DURATION;
 
