@@ -14,17 +14,20 @@
 
 //configuration for alienware
 #define MANDEYE_LIVOX_LISTEN_IP "192.168.1.5"
-#define MANDEYE_REPO "/tmp/mandeye/"
+#define MANDEYE_REPO "/media/usb/"
 #define MANDEYE_GPIO_SIM false
 #define SERVER_PORT 8003
 #define MANDEYE_GNSS_UART "/dev/ttyS0"
+#define DEFAULT_CAMERAS ""
 
 using namespace mandeye;
 
 using threadMap = std::unordered_map<std::string,std::shared_ptr<std::thread>>;
 
 void initializeCameraClientThread(threadMap& threads) {
-	std::shared_ptr<CamerasClient> camerasClientPtr = std::make_shared<CamerasClient>(utils::getIntListFromEnvVar("MANDEYE_CAMERA_IDS",""));
+	std::shared_ptr<CamerasClient> camerasClientPtr = std::make_shared<CamerasClient>(
+		utils::getIntListFromEnvVar("MANDEYE_CAMERA_IDS",DEFAULT_CAMERAS),
+		utils::getEnvString("MANDEYE_REPO", MANDEYE_REPO));
 	camerasClientPtr->SetTimeStampProvider(std::dynamic_pointer_cast<mandeye::TimeStampProvider>(livoxClientPtr));
 	std::shared_ptr<std::thread> thCameras = std::make_shared<std::thread>([&]() {
 		camerasClientPtr->receiveImages();

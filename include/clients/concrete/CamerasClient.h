@@ -17,22 +17,26 @@ struct stampedImage {
 
 class CamerasClient : public TimeStampReceiver, public SaveChunkToDirClient, public LoggerClient {
 	public:
-		explicit CamerasClient(const std::vector<int>& cameraIndexes);
+		CamerasClient(const std::vector<int>& cameraIndexes, const std::string& savingMediaPath);
 		void receiveImages();
 		void saveChunkToDirectory(const std::filesystem::path& directory, int chunk) override;
 		void startLog() override;
 		void stopLog() override;
 
 	private:
+		std::filesystem::path tmpDir; // on the final media device
+		std::vector<std::filesystem::path> tmpFiles;
 		std::vector<cv::VideoCapture> caps;
 		std::mutex buffersMutex;
-		std::vector<std::deque<stampedImage>> buffers;
+		std::vector<cv::VideoWriter> buffers;
 		std::atomic<bool> isLogging{false};
 
 		void initializeVideoCapture(int index);
-		static void saveBufferToDirectory(const std::filesystem::path& dirName, std::deque<stampedImage>& buffer, int cameraId);
 		void addImagesToBuffer(const std::vector<cv::Mat>& images, double timestamp);
-		std::vector<cv::Mat> readSynchedImages();
+		void initializeVideoWriter(int index);
+		std::vector<cv::Mat> readSyncedImages();
+		std::filesystem::path getTmpFilePath(int cameraIndex);
+		static std::filesystem::path getFinalFilePath(const std::filesystem::path& outDir, int cameraIndex, int chunk);
 
 };
 

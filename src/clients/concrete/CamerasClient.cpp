@@ -6,9 +6,17 @@ namespace mandeye {
 
 using namespace cv;
 
-CamerasClient::CamerasClient(const std::vector<int>& cameraIndexes) {
+CamerasClient::CamerasClient(const std::vector<int>& cameraIndexes, const std::string& savingMediaPath)
+{
+	tmpDir = std::filesystem::path(savingMediaPath) / ".mandeye_cameras_tmp";
+	if (!std::filesystem::is_directory(tmpDir) && !std::filesystem::create_directory(tmpDir)) {
+		std::cerr << "Error creating directory '" << tmpDir << "'" << std::endl;
+	}
 	for(int index: cameraIndexes)
 		initializeVideoCapture(index);
+
+	tmpFiles.resize(caps.size());
+	buffers.resize(caps.size());
 }
 
 void CamerasClient::initializeVideoCapture(int index) {
@@ -20,50 +28,24 @@ void CamerasClient::initializeVideoCapture(int index) {
 		caps.pop_back();
 		return;
 	}
+	std::lock_guard<std::mutex> lock(buffersMutex);
+	initializeVideoWriter(index);
 	std::cout << "Initialized camera number " << index << std::endl;
-	std::deque<stampedImage> buffer;
-	buffers.push_back(buffer);
 }
 
 void CamerasClient::saveChunkToDirectory(const std::filesystem::path& dirName, int chunkNumber)
 {
-	using namespace std::filesystem;
-	char chunkDir[64];
-	snprintf(chunkDir, 64, "images%04d", chunkNumber);
-	path outDir = dirName / path(chunkDir);
-	if (!create_directory(outDir)) {
-		std::cerr << "Error creating directory '" << outDir << "'" << std::endl;
-		return; // do not clean up the buffers, keep images in memory
-	}
-	std::vector<std::deque<stampedImage>> buffersCopy;
 	{
 		std::lock_guard<std::mutex> lock(buffersMutex);
-		buffersCopy = buffers;
-		for(auto& buffer: buffers)
-			buffer.clear();
-	}
-	// std::cout << "Buffers size: " << buffersCopy[0].size() << std::endl;
-	for(int i=0; i<buffersCopy.size(); i++)
-		saveBufferToDirectory(outDir, buffersCopy[i], i);
-}
-
-void CamerasClient::saveBufferToDirectory(const std::filesystem::path& dirName, std::deque<stampedImage>& buffer, int cameraId) {
-	stampedImage tmp;
-	std::filesystem::path imagePath;
-	char filename[64];
-	int len = buffer.size(), i=0;
-	while(!buffer.empty()) {
-		tmp = buffer.front();
-		snprintf(filename, 64, "camera_%d_stamp_%d.png", cameraId, (int) (tmp.timestamp * 1e9));
-		imagePath = dirName / filename;
-		std::cout << "Saving image number " << i++ << "/" << len << " to " << imagePath << "\n";
-		imwrite(imagePath, tmp.image);
-		buffer.pop_front();
+		for(int i=0; i<buffers.size(); i++) {
+			buffers[i].release();
+			std::filesystem::rename(getTmpFilePath(i), getFinalFilePath(dirName, i, chunkNumber));
+			initializeVideoWriter(i);
+		}
 	}
 }
 
-
-std::vector<Mat> CamerasClient::readSynchedImages()
+std::vector<Mat> CamerasClient::readSyncedImages()
 {
 	for(auto& cap: caps)
 		cap.grab();
@@ -82,14 +64,14 @@ void CamerasClient::receiveImages() {
 	std::vector<Mat> currentImages;
 	while(isRunning) {
 		if (!isLogging.load()) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 			continue; // do not waste CPU time if we are not logging
 		}
 
 		// check for the timestamp update (when a pointcloud is received)
 		// should happen 10 times per second (I think that the cameras are faster)
 		// When the timestamp is updated I add the latest images to the buffer
-		currentImages = readSynchedImages();
+		currentImages = readSyncedImages();
 		currentTimestamp = GetTimeStamp();
 
 		if (currentTimestamp != lastTimestamp) {
@@ -110,20 +92,34 @@ void CamerasClient::addImagesToBuffer(const std::vector<Mat>& images, double tim
 	tmp.timestamp = timestamp;
 	for(int i=0; i<buffers.size(); i++) {
 		tmp.image = images[i];
-		buffers[i].push_back(tmp);
+		buffers[i] << tmp.image;
 	}
-	std::cout << "Added images to buffer, current size: " << buffers[0].size() << std::endl;
+	// std::cout << "Added images to buffer, current size: " << buffers[0].size() << std::endl;
 }
 
 void CamerasClient::startLog() {
 	std::lock_guard<std::mutex> lock(buffersMutex);
 	isLogging.store(true);
-	for(auto& buffer: buffers)
-		buffer.clear();
+	for(int index=0; index<buffers.size(); index++)
+		initializeVideoWriter(index);
 }
+
 void CamerasClient::stopLog() {
 	std::lock_guard<std::mutex> lock(buffersMutex);
 	isLogging.store(false);
+}
+
+std::filesystem::path CamerasClient::getTmpFilePath(int cameraIndex) {
+	return tmpDir / ("camera_" + std::to_string(cameraIndex) + ".mp4");
+}
+
+std::filesystem::path CamerasClient::getFinalFilePath(const std::filesystem::path& outDir, int cameraIndex, int chunk) {
+	// camera_0_chunk_0001.mp4
+	return outDir / ("camera_" + std::to_string(cameraIndex) + "_chunk_" + std::string(4 - std::log10(chunk), '0') + std::to_string(chunk) + ".mp4");
+}
+
+void CamerasClient::initializeVideoWriter(int index) {
+	buffers[index].open(getTmpFilePath(index), VideoWriter::fourcc('H','2','6','4'), 10, Size(1920, 1080));
 }
 
 } // namespace mandeye
