@@ -29,7 +29,7 @@ void initializeCameraClientThread(threadMap& threads) {
 		utils::getIntListFromEnvVar("MANDEYE_CAMERA_IDS",DEFAULT_CAMERAS),
 		utils::getEnvString("MANDEYE_REPO", MANDEYE_REPO));
 	camerasClientPtr->SetTimeStampProvider(std::dynamic_pointer_cast<mandeye::TimeStampProvider>(livoxClientPtr));
-	std::shared_ptr<std::thread> thCameras = std::make_shared<std::thread>([&]() {
+	threads["Cameras Client"] = std::make_shared<std::thread>([&]() {
 		camerasClientPtr->receiveImages();
 	});
 	{
@@ -38,19 +38,17 @@ void initializeCameraClientThread(threadMap& threads) {
 		loggerClients.push_back(camerasClientPtr);
 	}
 
-	threads["Cameras Client"] = thCameras;
 	initializationLatch--;
 	std::cout << "Cameras Client initialized" << std::endl;
 }
 
 void initializeStateMachineThread(threadMap& threads) {
-	std::shared_ptr<std::thread> thStateMachine = std::make_shared<std::thread>([&]() { stateWatcher(); });
-	threads["State Machine"] = thStateMachine;
+	threads["State Machine"] = std::make_shared<std::thread>([&]() { stateWatcher(); });
 	std::cout << "State Machine initialized" << std::endl;
 }
 
 void initializeLivoxThreadAndGnss(threadMap& threads, std::atomic<bool>& lidar_error) {
-	std::shared_ptr<std::thread> thLivox = std::make_shared<std::thread>([&]() {
+	threads["Livox"] = std::make_shared<std::thread>([&]() {
 		livoxClientPtr = std::make_shared<LivoxClient>();
 		if(!livoxClientPtr->startListener(utils::getEnvString("MANDEYE_LIVOX_LISTEN_IP", MANDEYE_LIVOX_LISTEN_IP))){
 			lidar_error.store(true);
@@ -80,7 +78,6 @@ void initializeLivoxThreadAndGnss(threadMap& threads, std::atomic<bool>& lidar_e
 		initializationLatch--;
 		std::cout << "Livox and GNSS initialized" << std::endl;
 	});
-	threads["Livox"] = thLivox;
 }
 
 void initializeFileSystemClient() {
@@ -94,7 +91,7 @@ void initializeFileSystemClient() {
 
 void initializeGpioClientThread(threadMap& threads) {
 	using namespace std::chrono_literals;
-	std::shared_ptr<std::thread> thGpio = std::make_shared<std::thread>([&]() {
+	threads["Gpio"] = std::make_shared<std::thread>([&]() {
 		const bool simMode = utils::getEnvBool("MANDEYE_GPIO_SIM", MANDEYE_GPIO_SIM);
 		std::cout << "MANDEYE_GPIO_SIM : " << simMode << std::endl;
 		gpioClientPtr = std::make_shared<GpioClient>(simMode);
@@ -113,7 +110,6 @@ void initializeGpioClientThread(threadMap& threads) {
 
 		initializationLatch--;
 	});
-	threads["Gpio"] = thGpio;
 }
 
 void initializePistacheServerThread(threadMap& threads, std::shared_ptr<Pistache::Http::Endpoint>& server) {
@@ -122,14 +118,13 @@ void initializePistacheServerThread(threadMap& threads, std::shared_ptr<Pistache
 	Address addr(Ipv4::any(), SERVER_PORT);
 	server = std::make_shared<Http::Endpoint>(addr);
 
-	std::shared_ptr<std::thread> http_thread = std::make_shared<std::thread>([&]() {
+	threads["Pistache server"] = std::make_shared<std::thread>([&]() {
 		auto opts = Http::Endpoint::options().threads(2);
 		server->init(opts);
 		server->setHandler(Http::make_handler<PistacheServerHandler>());
 		std::cout << "Starting Pistache server on port " << SERVER_PORT << std::endl;
 		server->serve();
 	});
-	threads["Pistache server"] = http_thread;
 }
 
 int main(int argc, char** argv)

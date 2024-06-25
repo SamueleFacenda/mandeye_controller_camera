@@ -15,6 +15,7 @@ CamerasClient::CamerasClient(const std::vector<int>& cameraIndexes, const std::s
 	for(int index: cameraIndexes)
 		initializeVideoCapture(index);
 
+	std::lock_guard<std::mutex> lock(buffersMutex);
 	for(int i=0; i<buffers.size(); i++) {
 		VideoWriter tmp;
 		buffers.push_back(tmp);
@@ -22,16 +23,12 @@ CamerasClient::CamerasClient(const std::vector<int>& cameraIndexes, const std::s
 }
 
 void CamerasClient::initializeVideoCapture(int index) {
-	VideoCapture tmp;
-	caps.push_back(tmp);
-	caps.back().open(index);
-	if (!caps.back().isOpened()) {
+	VideoCapture tmp(index);
+	if (!tmp.isOpened()) {
 		std::cerr << "Error opening cap number " << index << std::endl;
-		caps.pop_back();
 		return;
 	}
-	std::lock_guard<std::mutex> lock(buffersMutex);
-	initializeVideoWriter(index);
+	caps.push_back(tmp);
 	std::cout << "Initialized camera number " << index << std::endl;
 }
 
@@ -63,7 +60,7 @@ std::vector<Mat> CamerasClient::readSyncedImages()
 void CamerasClient::receiveImages() {
 	double lastTimestamp = GetTimeStamp(), currentTimestamp;
 	std::vector<Mat> currentImages;
-	while(isRunning) {
+	while(isRunning.load()) {
 		if (!isLogging.load()) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 			continue; // do not waste CPU time if we are not logging
@@ -81,6 +78,8 @@ void CamerasClient::receiveImages() {
 			addImagesToBuffer(currentImages, lastTimestamp);
 		}
 	}
+	for(auto& cap: caps)
+		cap.release();
 }
 
 void CamerasClient::addImagesToBuffer(const std::vector<Mat>& images, double timestamp) {
@@ -99,15 +98,17 @@ void CamerasClient::addImagesToBuffer(const std::vector<Mat>& images, double tim
 }
 
 void CamerasClient::startLog() {
-	std::lock_guard<std::mutex> lock(buffersMutex);
 	isLogging.store(true);
+	std::lock_guard<std::mutex> lock(buffersMutex);
 	for(int index=0; index<buffers.size(); index++)
 		initializeVideoWriter(index);
 }
 
 void CamerasClient::stopLog() {
-	std::lock_guard<std::mutex> lock(buffersMutex);
 	isLogging.store(false);
+	std::lock_guard<std::mutex> lock(buffersMutex);
+	for(auto& buffer: buffers)
+		buffer.release();
 }
 
 std::filesystem::path CamerasClient::getTmpFilePath(int cameraIndex) {
@@ -122,6 +123,7 @@ std::filesystem::path CamerasClient::getFinalFilePath(const std::filesystem::pat
 void CamerasClient::initializeVideoWriter(int index) {
 	// h264 can be changed to something properly lossless or h265 (better encoding, x10/x20 encoding time)
 	buffers[index].open(getTmpFilePath(index), VideoWriter::fourcc('H','2','6','4'), 10, Size(1920, 1080));
+	std::cout << "Initialized writer at " << getTmpFilePath(index) << std::endl;
 }
 
 } // namespace mandeye
