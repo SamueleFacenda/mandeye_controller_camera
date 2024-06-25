@@ -54,11 +54,9 @@ void initializeLivoxThreadAndGnss(threadMap& threads, std::atomic<bool>& lidar_e
 
 		// initialize gnss client in this thread to prevent initialization fiasco
 		const std::string portName = utils::getEnvString("MANDEYE_GNSS_UART", MANDEYE_GNSS_UART);
-		std::shared_ptr<GNSSClient> gnssClientPtr;
-		if (!portName.empty())
-		{
+		if (!portName.empty()) {
 			std::cout << "Initialize gnss" << std::endl;
-			gnssClientPtr = std::make_shared<GNSSClient>();
+			std::shared_ptr<GNSSClient> gnssClientPtr = std::make_shared<GNSSClient>();
 			gnssClientPtr->SetTimeStampProvider(std::dynamic_pointer_cast<mandeye::TimeStampProvider>(livoxClientPtr));
 			gnssClientPtr->startListener(portName, 9600);
 
@@ -80,10 +78,8 @@ void initializeLivoxThreadAndGnss(threadMap& threads, std::atomic<bool>& lidar_e
 
 void initializeFileSystemClient() {
 	fileSystemClientPtr = std::make_shared<FileSystemClient>(utils::getEnvString("MANDEYE_REPO", MANDEYE_REPO));
-	{
-		std::unique_lock<std::shared_mutex> lock(clientsMutex);
-		jsonReportProducerClients.push_back(fileSystemClientPtr);
-	}
+	std::unique_lock<std::shared_mutex> lock(clientsMutex);
+	jsonReportProducerClients.push_back(fileSystemClientPtr);
 	std::cout << "FileSystemClient initialized" << std::endl;
 }
 

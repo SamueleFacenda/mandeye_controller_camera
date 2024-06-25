@@ -2,6 +2,10 @@
 #include "state_management.h"
 #include <opencv2/opencv.hpp>
 
+#define CAMERA_WIDTH 1920
+#define CAMERA_HEIGHT 1080
+#define EXPECTED_FPS 10
+
 namespace mandeye {
 
 using namespace cv;
@@ -23,18 +27,23 @@ CamerasClient::CamerasClient(const std::vector<int>& cameraIndexes, const std::s
 }
 
 void CamerasClient::initializeVideoCapture(int index) {
-	VideoCapture tmp(index);
+	VideoCapture tmp(index, CAP_V4L2); // on raspberry defaults to gstreamer, buggy
 	if (!tmp.isOpened()) {
 		std::cerr << "Error opening cap number " << index << std::endl;
 		return;
 	}
+	// fourcc defaults to YUYV, which is buggy in the resolution selection
+	tmp.set(CAP_PROP_FOURCC, VideoWriter::fourcc('M','J','P','G'));
+	tmp.set(CAP_PROP_FRAME_WIDTH, CAMERA_WIDTH);
+	tmp.set(CAP_PROP_FRAME_HEIGHT, CAMERA_HEIGHT);
+	assert(tmp.get(CAP_PROP_FRAME_WIDTH) == CAMERA_WIDTH); // check if the camera accepted the resolution
+	assert(tmp.get(CAP_PROP_FRAME_HEIGHT) == CAMERA_HEIGHT);
 	caps.push_back(tmp);
 	std::cout << "Initialized camera number " << index << std::endl;
 }
 
 void CamerasClient::saveChunkToDirectory(const std::filesystem::path& dirName, int chunkNumber)
 {
-
 	std::lock_guard<std::mutex> lock(buffersMutex);
 	for(int i=0; i<buffers.size(); i++) {
 		buffers[i].release();
@@ -117,7 +126,9 @@ std::filesystem::path CamerasClient::getFinalFilePath(const std::filesystem::pat
 
 void CamerasClient::initializeVideoWriter(int index) {
 	// h264 can be changed to something properly lossless or h265 (better encoding, x10/x20 encoding time, according to some random blog post I found)
-	buffers[index].open(getTmpFilePath(index), VideoWriter::fourcc('X','2','6','4'), 10, Size(1920, 1080));
+	// avc1 or mp4v can be used for h264
+	int fourcc = VideoWriter::fourcc('a','v','c','1');
+	buffers[index].open(getTmpFilePath(index), fourcc, EXPECTED_FPS, Size(CAMERA_WIDTH, CAMERA_HEIGHT));
 }
 
 } // namespace mandeye
