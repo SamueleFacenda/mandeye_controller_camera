@@ -29,6 +29,7 @@ class CamerasClient : public TimeStampReceiver, public SaveChunkToDirClient, pub
 		std::mutex buffersMutex;
 		std::vector<cv::VideoWriter> buffers;
 		std::atomic<bool> isLogging{false};
+		std::vector<std::filesystem::path> tmpFiles;
 
 		void initializeVideoCapture(int index);
 		void addImagesToBuffer(const std::vector<cv::Mat>& images, double timestamp);

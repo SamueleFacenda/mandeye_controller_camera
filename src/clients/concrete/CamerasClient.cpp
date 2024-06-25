@@ -1,6 +1,8 @@
 #include "clients/concrete/CamerasClient.h"
 #include "state_management.h"
 #include <opencv2/opencv.hpp>
+#include <execution>
+#include <ranges>
 
 #define CAMERA_WIDTH 1920
 #define CAMERA_HEIGHT 1080
@@ -23,6 +25,7 @@ CamerasClient::CamerasClient(const std::vector<int>& cameraIndexes, const std::s
 	for(int i=0; i<caps.size(); i++) {
 		VideoWriter tmp;
 		buffers.push_back(tmp);
+		tmpFiles.emplace_back("");
 	}
 }
 
@@ -44,12 +47,27 @@ void CamerasClient::initializeVideoCapture(int index) {
 
 void CamerasClient::saveChunkToDirectory(const std::filesystem::path& dirName, int chunkNumber)
 {
-	std::lock_guard<std::mutex> lock(buffersMutex);
-	for(int i=0; i<buffers.size(); i++) {
-		buffers[i].release();
-		std::filesystem::rename(getTmpFilePath(i), getFinalFilePath(dirName, i, chunkNumber));
-		initializeVideoWriter(i);
+	std::vector<VideoWriter> tmpBuffers;
+	std::vector<std::filesystem::path> oldNames;
+	{
+		std::lock_guard<std::mutex> lock(buffersMutex);
+		for(int i=0; i<buffers.size(); i++) {
+			VideoWriter empty;
+			tmpBuffers.push_back(buffers[i]);
+			oldNames.push_back(tmpFiles[i]);
+			buffers[i] = empty;
+			initializeVideoWriter(i);
+		}
 	}
+
+	// parallel for
+	auto range = std::views::iota(0, (int) tmpBuffers.size());
+	std::for_each(std::execution::par_unseq, range.begin(), range.end(), [&](int i) {
+		auto start = std::chrono::steady_clock::now();
+		tmpBuffers[i].release();
+		std::cout << "Time to save chunk " << i << ": " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() << "ms\n";
+		std::filesystem::rename(oldNames[i], getFinalFilePath(dirName, i, chunkNumber));
+	});
 }
 
 std::vector<Mat> CamerasClient::readSyncedImages()
@@ -116,7 +134,8 @@ void CamerasClient::stopLog() {
 }
 
 std::filesystem::path CamerasClient::getTmpFilePath(int cameraIndex) {
-	return tmpDir / ("camera_" + std::to_string(cameraIndex) + ".mp4");
+	// add random number to avoid conflicts
+	return tmpDir / ("camera_" + std::to_string(cameraIndex) + "_" +std::to_string((int)(rand()%10000)) + ".mp4");
 }
 
 std::filesystem::path CamerasClient::getFinalFilePath(const std::filesystem::path& outDir, int cameraIndex, int chunk) {
@@ -128,7 +147,8 @@ void CamerasClient::initializeVideoWriter(int index) {
 	// h264 can be changed to something properly lossless or h265 (better encoding, x10/x20 encoding time, according to some random blog post I found)
 	// avc1 or mp4v can be used for h264
 	int fourcc = VideoWriter::fourcc('a','v','c','1');
-	buffers[index].open(getTmpFilePath(index), fourcc, EXPECTED_FPS, Size(CAMERA_WIDTH, CAMERA_HEIGHT));
+	tmpFiles[index] = getTmpFilePath(index);
+	buffers[index].open(tmpFiles[index], fourcc, EXPECTED_FPS, Size(CAMERA_WIDTH, CAMERA_HEIGHT));
 }
 
 } // namespace mandeye
