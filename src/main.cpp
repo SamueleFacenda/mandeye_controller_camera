@@ -32,11 +32,9 @@ void initializeCameraClientThread(threadMap& threads) {
 	threads["Cameras Client"] = std::make_shared<std::thread>([&]() {
 		camerasClientPtr->receiveImages();
 	});
-	{
-		std::unique_lock<std::shared_mutex> lock(clientsMutex);
-		saveableClients.push_back(camerasClientPtr);
-		loggerClients.push_back(camerasClientPtr);
-	}
+	std::unique_lock<std::shared_mutex> lock(clientsMutex);
+	saveableClients.push_back(camerasClientPtr);
+	loggerClients.push_back(camerasClientPtr);
 
 	initializationLatch--;
 	std::cout << "Cameras Client initialized" << std::endl;
