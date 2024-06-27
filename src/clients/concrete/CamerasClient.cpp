@@ -14,6 +14,7 @@ using namespace cv;
 
 CamerasClient::CamerasClient(const std::vector<int>& cameraIndexes, const std::string& savingMediaPath)
 {
+	isLogging.store(false);
 	tmpDir = std::filesystem::path(savingMediaPath) / ".mandeye_cameras_tmp";
 	if (!std::filesystem::is_directory(tmpDir) && !std::filesystem::create_directories(tmpDir)) {
 		std::cerr << "Error creating directory '" << tmpDir << "'" << std::endl;
@@ -63,9 +64,9 @@ void CamerasClient::saveChunkToDirectory(const std::filesystem::path& dirName, i
 	// parallel for
 	auto range = std::views::iota(0, (int) tmpBuffers.size());
 	std::for_each(std::execution::par_unseq, range.begin(), range.end(), [&](int i) {
-		auto start = std::chrono::steady_clock::now();
-		tmpBuffers[i].release();
-		std::cout << "Time to save chunk " << i << ": " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() << "ms\n";
+		// auto start = std::chrono::steady_clock::now();
+		tmpBuffers[i].release(); // this takes ~0.6s with FFV1, pretty good
+		// std::cout << "Time to save chunk " << i << ": " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() << "ms\n";
 		std::filesystem::rename(oldNames[i], getFinalFilePath(dirName, i, chunkNumber));
 	});
 }
@@ -135,18 +136,19 @@ void CamerasClient::stopLog() {
 
 std::filesystem::path CamerasClient::getTmpFilePath(int cameraIndex) {
 	// add random number to avoid conflicts
-	return tmpDir / ("camera_" + std::to_string(cameraIndex) + "_" +std::to_string((int)(rand()%10000)) + ".mp4");
+	return tmpDir / ("camera_" + std::to_string(cameraIndex) + "_" +std::to_string((int)(rand()%10000)) + ".mkv");
 }
 
 std::filesystem::path CamerasClient::getFinalFilePath(const std::filesystem::path& outDir, int cameraIndex, int chunk) {
 	// camera_0_chunk_0001.mp4
-	return outDir / ("camera_" + std::to_string(cameraIndex) + "_chunk_" + std::string(chunk ? 3 - (int) log10(chunk) : 3, '0') + std::to_string(chunk) + ".mp4");
+	return outDir / ("camera_" + std::to_string(cameraIndex) + "_chunk_" + std::string(chunk ? 3 - (int) log10(chunk) : 3, '0') + std::to_string(chunk) + ".mkv");
 }
 
 void CamerasClient::initializeVideoWriter(int index) {
 	// h264 can be changed to something properly lossless or h265 (better encoding, x10/x20 encoding time, according to some random blog post I found)
 	// avc1 or mp4v can be used for h264
-	int fourcc = VideoWriter::fourcc('a','v','c','1');
+	// int fourcc = VideoWriter::fourcc('a','v','c','1');
+	int fourcc = VideoWriter::fourcc('F','F','V','1');
 	tmpFiles[index] = getTmpFilePath(index);
 	buffers[index].open(tmpFiles[index], fourcc, EXPECTED_FPS, Size(CAMERA_WIDTH, CAMERA_HEIGHT));
 }

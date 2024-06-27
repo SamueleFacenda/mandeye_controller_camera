@@ -8,9 +8,9 @@
 #include <execution>
 
 // in seconds
-#define STOP_SCAN_DURATION 5s
+#define STOP_SCAN_DURATION 10s
 #define CONTINOUS_SCAN_SAVE_INTERVAL 10s
-#define STOP_SCAN_DELAY 3s
+#define STOP_SCAN_DELAY 5s
 
 namespace mandeye
 {

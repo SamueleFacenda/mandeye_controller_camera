@@ -36,7 +36,7 @@ public:
 	//! Return current mapping from serial number to lidar id
 	std::unordered_map<uint32_t, std::string> getSerialNumberToLidarIdMapping() const;
 
-	// mandeye::TimeStampProvider overrides ...
+	// TimeStampProvider overrides ...
 	double getTimestamp() override;
 
 	// periodically ask lidars for status

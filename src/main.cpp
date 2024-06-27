@@ -28,8 +28,8 @@ void initializeCameraClientThread(threadMap& threads) {
 	std::shared_ptr<CamerasClient> camerasClientPtr = std::make_shared<CamerasClient>(
 		utils::getIntListFromEnvVar("MANDEYE_CAMERA_IDS",DEFAULT_CAMERAS),
 		utils::getEnvString("MANDEYE_REPO", MANDEYE_REPO));
-	camerasClientPtr->SetTimeStampProvider(std::dynamic_pointer_cast<mandeye::TimeStampProvider>(livoxClientPtr));
-	threads["Cameras Client"] = std::make_shared<std::thread>([&]() {
+	camerasClientPtr->SetTimeStampProvider(std::dynamic_pointer_cast<TimeStampProvider>(livoxClientPtr));
+	threads["Cameras Client"] = std::make_shared<std::thread>([=]() {
 		camerasClientPtr->receiveImages();
 	});
 	std::unique_lock<std::shared_mutex> lock(clientsMutex);
@@ -46,34 +46,32 @@ void initializeStateMachineThread(threadMap& threads) {
 }
 
 void initializeLivoxThreadAndGnss(threadMap& threads, std::atomic<bool>& lidar_error) {
-	threads["Livox"] = std::make_shared<std::thread>([&]() {
-		livoxClientPtr = std::make_shared<LivoxClient>();
-		if(!livoxClientPtr->startListener(utils::getEnvString("MANDEYE_LIVOX_LISTEN_IP", MANDEYE_LIVOX_LISTEN_IP))){
-			lidar_error.store(true);
-		}
+	livoxClientPtr = std::make_shared<LivoxClient>();
+	if(!livoxClientPtr->startListener(utils::getEnvString("MANDEYE_LIVOX_LISTEN_IP", MANDEYE_LIVOX_LISTEN_IP))){
+		lidar_error.store(true);
+	}
 
-		// initialize gnss client in this thread to prevent initialization fiasco
-		const std::string portName = utils::getEnvString("MANDEYE_GNSS_UART", MANDEYE_GNSS_UART);
-		if (!portName.empty()) {
-			std::cout << "Initialize gnss" << std::endl;
-			std::shared_ptr<GNSSClient> gnssClientPtr = std::make_shared<GNSSClient>();
-			gnssClientPtr->SetTimeStampProvider(std::dynamic_pointer_cast<mandeye::TimeStampProvider>(livoxClientPtr));
-			gnssClientPtr->startListener(portName, 9600);
+	// initialize gnss client in this thread to prevent initialization fiasco
+	const std::string portName = utils::getEnvString("MANDEYE_GNSS_UART", MANDEYE_GNSS_UART);
+	if (!portName.empty()) {
+		std::cout << "Initialize gnss" << std::endl;
+		std::shared_ptr<GNSSClient> gnssClientPtr = std::make_shared<GNSSClient>();
+		gnssClientPtr->SetTimeStampProvider(std::dynamic_pointer_cast<TimeStampProvider>(livoxClientPtr));
+		gnssClientPtr->startListener(portName, 9600);
 
-			std::unique_lock<std::shared_mutex> lock(clientsMutex);
-			saveableClients.push_back(gnssClientPtr);
-			loggerClients.push_back(gnssClientPtr);
-			jsonReportProducerClients.push_back(livoxClientPtr);
-		}
-
-		// acquire write lock and add clients
 		std::unique_lock<std::shared_mutex> lock(clientsMutex);
-		saveableClients.push_back(std::dynamic_pointer_cast<mandeye::SaveChunkToDirClient>(livoxClientPtr));
-		loggerClients.push_back(std::dynamic_pointer_cast<mandeye::LoggerClient>(livoxClientPtr));
-		jsonReportProducerClients.push_back(std::dynamic_pointer_cast<mandeye::JsonStateProducer>(livoxClientPtr));
-		initializationLatch--;
-		std::cout << "Livox and GNSS initialized" << std::endl;
-	});
+		saveableClients.push_back(gnssClientPtr);
+		loggerClients.push_back(gnssClientPtr);
+		jsonReportProducerClients.push_back(livoxClientPtr);
+	}
+
+	// acquire write lock and add clients
+	std::unique_lock<std::shared_mutex> lock(clientsMutex);
+	saveableClients.push_back(std::dynamic_pointer_cast<SaveChunkToDirClient>(livoxClientPtr));
+	loggerClients.push_back(std::dynamic_pointer_cast<LoggerClient>(livoxClientPtr));
+	jsonReportProducerClients.push_back(std::dynamic_pointer_cast<JsonStateProducer>(livoxClientPtr));
+	initializationLatch--;
+	std::cout << "Livox and GNSS initialized" << std::endl;
 }
 
 void initializeFileSystemClient() {

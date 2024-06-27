@@ -15,3 +15,4 @@ way better in this case)
 - We lose quality (probably)
 - Jpeg compression time: 0.05s, final size: ~250KB => (10fps) 2.5MB/s write, 0.5s encode
 
+Maybe FFV1 is the solution, fast and lossless video codec (the most balanced, according to ffmpeg)
