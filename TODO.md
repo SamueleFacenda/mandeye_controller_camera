@@ -9,10 +9,10 @@ each, 10 images per second is 60Mb/s, usb speed is 45Mb/s avg).
 Problems:
 - Write 10 imgs/s is not doable
 - Not-raw video codecs like h264 takes +10s to compress a 5s video (10fps)
-- Mayber jpeg images are the solution
-- We lose all the possible compression from continous images (video compression is
-way better in this case)
-- We lose quality (probably)
+- Maybe jpeg images are the solution, but we lose all the possible compression from continous images (video compression is
+way better in this case), and we lose quality (probably)
 - Jpeg compression time: 0.05s, final size: ~250KB => (10fps) 2.5MB/s write, 0.5s encode
 
 Maybe FFV1 is the solution, fast and lossless video codec (the most balanced, according to ffmpeg)
+
+Problem: the savelaz is sloooooow, takes more than 10 seconds, with 10 seconds intervals, so it's a big problem.
