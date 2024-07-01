@@ -45,13 +45,22 @@ void initializeStateMachineThread(threadMap& threads) {
 	std::cout << "State Machine initialized" << std::endl;
 }
 
-void initializeLivoxThreadAndGnss(threadMap& threads, std::atomic<bool>& lidar_error) {
+void initializeLivoxClient(std::atomic<bool>& lidar_error)
+{
 	livoxClientPtr = std::make_shared<LivoxClient>();
 	if(!livoxClientPtr->startListener(utils::getEnvString("MANDEYE_LIVOX_LISTEN_IP", MANDEYE_LIVOX_LISTEN_IP))){
 		lidar_error.store(true);
 	}
 
-	// initialize gnss client in this thread to prevent initialization fiasco
+	std::unique_lock<std::shared_mutex> lock(clientsMutex);
+	saveableClients.push_back(std::dynamic_pointer_cast<SaveChunkToDirClient>(livoxClientPtr));
+	loggerClients.push_back(std::dynamic_pointer_cast<LoggerClient>(livoxClientPtr));
+	jsonReportProducerClients.push_back(std::dynamic_pointer_cast<JsonStateProducer>(livoxClientPtr));
+	initializationLatch--;
+	std::cout << "Livox initialized" << std::endl;
+}
+
+void initializeGnssClient() {
 	const std::string portName = utils::getEnvString("MANDEYE_GNSS_UART", MANDEYE_GNSS_UART);
 	if (!portName.empty()) {
 		std::cout << "Initialize gnss" << std::endl;
@@ -64,14 +73,8 @@ void initializeLivoxThreadAndGnss(threadMap& threads, std::atomic<bool>& lidar_e
 		loggerClients.push_back(gnssClientPtr);
 		jsonReportProducerClients.push_back(livoxClientPtr);
 	}
-
-	// acquire write lock and add clients
-	std::unique_lock<std::shared_mutex> lock(clientsMutex);
-	saveableClients.push_back(std::dynamic_pointer_cast<SaveChunkToDirClient>(livoxClientPtr));
-	loggerClients.push_back(std::dynamic_pointer_cast<LoggerClient>(livoxClientPtr));
-	jsonReportProducerClients.push_back(std::dynamic_pointer_cast<JsonStateProducer>(livoxClientPtr));
 	initializationLatch--;
-	std::cout << "Livox and GNSS initialized" << std::endl;
+	std::cout << "GNSS initialized" << std::endl;
 }
 
 void initializeFileSystemClient() {
@@ -99,7 +102,6 @@ void initializeGpioClientThread(threadMap& threads) {
 
 		std::unique_lock<std::shared_mutex> lock(clientsMutex);
 		jsonReportProducerClients.push_back(gpioClientPtr);
-
 		initializationLatch--;
 	});
 }
@@ -128,7 +130,8 @@ int main(int argc, char** argv)
 
 	initializePistacheServerThread(threadsWithNames, server);
 	initializeFileSystemClient();
-	initializeLivoxThreadAndGnss(threadsWithNames, lidar_error);
+	initializeLivoxClient(lidar_error);
+	initializeGnssClient();
 	initializeStateMachineThread(threadsWithNames);
 	initializeGpioClientThread(threadsWithNames);
 	initializeCameraClientThread(threadsWithNames);

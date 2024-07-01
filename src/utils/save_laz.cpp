@@ -4,8 +4,8 @@
 
 bool mandeye::saveLaz(const std::string& filename, const LivoxPointsBufferPtr& buffer)
 {
-
-	constexpr float scale = 0.0001f; // one tenth of milimeter
+	auto now = std::chrono::system_clock::now();
+	constexpr float scale = 0.0001f; // one tenth of millimeter
 	// find max
 	double max_x{std::numeric_limits<double>::lowest()};
 	double max_y{std::numeric_limits<double>::lowest()};
@@ -162,5 +162,6 @@ bool mandeye::saveLaz(const std::string& filename, const LivoxPointsBufferPtr& b
 	}
 
 	std::cout << "exportLaz DONE" << std::endl;
+	std::cout << "time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - now).count() << "ms" << std::endl;
 	return true;
 }
