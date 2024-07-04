@@ -95,7 +95,7 @@ bool saveChunkToDisk(const std::string& outDirectory, int chunk)
 	gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_COPY_DATA, true);
 
 	// parallelize the saving of the chunks
-	std::for_each(std::execution::par_unseq, saveableClients.begin(), saveableClients.end(), [&outDirectory, chunk](auto& client){
+	std::for_each(std::execution::par, saveableClients.begin(), saveableClients.end(), [&outDirectory, chunk](auto& client){
 		client->saveChunkToDirectory(outDirectory, chunk);
 	});
 

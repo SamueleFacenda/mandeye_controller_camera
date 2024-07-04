@@ -18,4 +18,4 @@
     url = https://github.com/kosma/minmea.git
 [submodule "3rd/Livox-SDK2"]
 	path = 3rd/Livox-SDK2
-	url = https://github.com/Livox-SDK/Livox-SDK2.git
+	url = https://github.com/Ericsii/Livox-SDK2.git

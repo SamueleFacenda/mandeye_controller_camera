@@ -54,14 +54,8 @@ bool mandeye::saveLaz(const std::string& filename, const LivoxPointsBufferPtr& b
 	if(buffer->size() > 4000000){
 		step = ceil((double)buffer->size() / 2000000.0);
 	}
-	if(step < 1){
-		step = 1;
-	}
 
-	int num_points = 0;
-	for(int i = 0; i < buffer->size(); i += step){
-		num_points ++;
-	}
+	int num_points = buffer->size() / step;
 
 	header->file_source_ID = 4711;
 	header->global_encoding = (1 << 0); // see LAS specification for details
@@ -89,6 +83,7 @@ bool mandeye::saveLaz(const std::string& filename, const LivoxPointsBufferPtr& b
 	// optional: use the bounding box and the scale factor to create a "good" offset
 	// open the writer
 	laszip_BOOL compress = (strstr(filename.c_str(), ".laz") != 0);
+	compress = 0;
 
 	if(laszip_open_writer(laszip_writer, filename.c_str(), compress))
 	{
@@ -109,6 +104,7 @@ bool mandeye::saveLaz(const std::string& filename, const LivoxPointsBufferPtr& b
 
 	laszip_I64 p_count = 0;
 	laszip_F64 coordinates[3];
+
 
 	//for(int i = 0; i < buffer->size(); i++)
 	for(int i = 0; i < buffer->size(); i += step)
