@@ -5,6 +5,7 @@
 #include "clients/LoggerClient.h"
 #include "clients/SaveChunkToDirClient.h"
 #include "clients/TimeStampProvider.h"
+#include "clients/IteratorToFileSaver.h"
 #include "clients/concrete/ImuFileSaver.h"
 #include "clients/concrete/LidarFileSaver.h"
 #include "livox_types.h"
@@ -19,6 +20,8 @@ namespace mandeye
 class LivoxClient : public SaveChunkToDirClient, public TimeStampProvider, public LoggerClient, public JsonStateProducer
 {
 public:
+	LivoxClient();
+
 	nlohmann::json produceStatus() override;
 	std::string getJsonName() override;
 
@@ -82,8 +85,8 @@ private:
 	//! @param handle the handle to convert
 	uint16_t handleToLidarId(uint32_t handle) const;
 
-	ImuFileSaver imuFileSaver;
-	LidarFileSaver lidarFileSaver;
+	IteratorToFileSaver<std::deque, LivoxIMU> imuIteratorToFileSaver;
+	IteratorToFileSaver<std::unordered_map, uint32_t, std::string> lidarIteratorToFileSaver;
 
 
 	static constexpr char config[] =

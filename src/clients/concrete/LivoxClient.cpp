@@ -10,6 +10,17 @@
 namespace mandeye
 {
 
+LivoxClient::LivoxClient() : imuIteratorToFileSaver("csv", "imu", [](const LivoxIMU& imu) {
+	std::stringstream ss;
+	ss << imu.timestamp << " " << imu.point.gyro_x << " " << imu.point.gyro_y << " " << imu.point.gyro_z << " " << imu.point.acc_x << " "
+	   << imu.point.acc_y << " " << imu.point.acc_z << " " << imu.laser_id << std::endl;
+	return ss.str();
+}), lidarIteratorToFileSaver("lidar", "ls", [](uint32_t id, std::string sn) {
+	std::stringstream ss;
+	ss << id << " " << sn << "\n";
+	return ss.str();
+}) {}
+
 std::string ReplaceAll(std::string str, const std::string& from, const std::string& to)
 {
 	size_t start_pos = 0;
@@ -511,8 +522,8 @@ uint16_t LivoxClient::handleToLidarId(uint32_t handle) const
 }
 
 void LivoxClient::saveDumpedChunkToDirectory(const std::filesystem::path& directory, int chunk) {
-	lidarFileSaver.saveDumpedChunkToDirectory(directory, chunk);
-	imuFileSaver.saveDumpedChunkToDirectory(directory, chunk);
+	lidarIteratorToFileSaver.saveDumpedChunkToDirectory(directory, chunk);
+	imuIteratorToFileSaver.saveDumpedChunkToDirectory(directory, chunk);
 
 	char pointcloudFileName[64];
 	snprintf(pointcloudFileName, 64, "lidar%04d.laz", chunk);
@@ -525,8 +536,8 @@ void LivoxClient::dumpChunkInternally() {
 	auto [lidarBuffer, imuBuffer] = retrieveData();
 	auto lidarList = getSerialNumberToLidarIdMapping();
 
-	lidarFileSaver.setBuffer(lidarList);
-	imuFileSaver.setBuffer(imuBuffer);
+	lidarIteratorToFileSaver.setBuffer(lidarList.begin(), lidarList.end());
+	imuIteratorToFileSaver.setBuffer(imuBuffer->begin(), imuBuffer->end());
 	dumpedBufferLivoxPtr = lidarBuffer;
 }
 

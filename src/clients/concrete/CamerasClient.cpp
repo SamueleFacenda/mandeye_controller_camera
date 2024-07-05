@@ -54,21 +54,23 @@ void CamerasClient::saveDumpedChunkToDirectory(const std::filesystem::path& dirN
 		// auto start = std::chrono::steady_clock::now();
 		dumpBuffers[i].release(); // this takes ~0.6s with FFV1, pretty good
 		// std::cout << "Time to save chunk " << i << ": " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() << "ms\n";
-		std::filesystem::rename(dumpNames[i], getFinalFilePath(dirName, i, chunkNumber));
+		std::filesystem::rename(dumpTmpFiles[i], getFinalFilePath(dirName, i, chunkNumber));
 	});
 }
 
 void CamerasClient::dumpChunkInternally() {
 	dumpBuffers.clear();
-	dumpNames.clear();
+	dumpTmpFiles.clear();
 	std::lock_guard<std::mutex> lock(buffersMutex);
 	for(int i=0; i<buffers.size(); i++) {
 		VideoWriter empty;
 		dumpBuffers.push_back(buffers[i]);
-		dumpNames.push_back(tmpFiles[i]);
+		dumpTmpFiles.push_back(tmpFiles[i]);
 		buffers[i] = empty;
 		initializeVideoWriter(i);
 	}
+	dumpTimestamps = timestamps;
+	timestamps.clear();
 }
 
 
@@ -116,6 +118,7 @@ void CamerasClient::addImagesToBuffer(const std::vector<Mat>& images, double tim
 	if(!isLogging.load())
 		return; // recheck (strange things can happen in multithreading)
 
+	timestamps.emplace_back(timestamp);
 	for(int i=0; i<buffers.size(); i++)
 		buffers[i] << images[i];
 	// std::cout << "Added images to buffer, current size: " << buffers[0].size() << std::endl;

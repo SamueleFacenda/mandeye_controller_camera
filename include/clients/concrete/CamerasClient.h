@@ -10,11 +10,6 @@
 
 namespace mandeye {
 
-struct stampedImage {
-	double timestamp;
-	cv::Mat image;
-};
-
 class CamerasClient : public TimeStampReceiver, public SaveChunkToDirClient, public LoggerClient {
 	public:
 		CamerasClient(const std::vector<int>& cameraIndexes, const std::string& savingMediaPath);
@@ -31,8 +26,10 @@ class CamerasClient : public TimeStampReceiver, public SaveChunkToDirClient, pub
 		std::vector<cv::VideoWriter> buffers;
 		std::atomic<bool> isLogging{false};
 		std::vector<std::filesystem::path> tmpFiles;
+		std::vector<double> timestamps;
 		std::vector<cv::VideoWriter> dumpBuffers; // needed by SaveChunkToDirClient
-		std::vector<std::filesystem::path> dumpNames;
+		std::vector<std::filesystem::path> dumpTmpFiles;
+		std::vector<double> dumpTimestamps;
 
 		void initializeVideoCapture(int index);
 		void addImagesToBuffer(const std::vector<cv::Mat>& images, double timestamp);
