@@ -8,7 +8,10 @@ namespace mandeye
 class SaveChunkToDirClient
 {
 public:
-	virtual void saveChunkToDirectory(const std::filesystem::path& directory, int chunk) = 0;
+	//! Used to sync more clients, you dump the chunk for each client and then save it to the directory
+	//!  Because dumping to directory is slower and there is no sync between clients
+	virtual void dumpChunkInternally() = 0;
+	virtual void saveDumpedChunkToDirectory(const std::filesystem::path& directory, int chunk) = 0;
 };
 
 } // namespace mandeye

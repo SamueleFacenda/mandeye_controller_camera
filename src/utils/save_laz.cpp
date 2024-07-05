@@ -51,7 +51,7 @@ bool mandeye::saveLaz(const std::string& filename, const LivoxPointsBufferPtr& b
 
 	// populate the header
 	int step = 1;
-	if(buffer->size() > 4000000){
+	if(buffer->size() > 4000000){ // this will likely never happen
 		step = ceil((double)buffer->size() / 2000000.0);
 	}
 
@@ -83,7 +83,6 @@ bool mandeye::saveLaz(const std::string& filename, const LivoxPointsBufferPtr& b
 	// optional: use the bounding box and the scale factor to create a "good" offset
 	// open the writer
 	laszip_BOOL compress = (strstr(filename.c_str(), ".laz") != 0);
-	compress = 0;
 
 	if(laszip_open_writer(laszip_writer, filename.c_str(), compress))
 	{
@@ -113,9 +112,8 @@ bool mandeye::saveLaz(const std::string& filename, const LivoxPointsBufferPtr& b
 		const auto& p = buffer->at(i);
 		point->intensity = p.point.reflectivity;
 		point->gps_time = p.timestamp * 1e-9;
-		point->user_data = p.line_id;
-		point->classification = p.point.tag;
 		point->user_data = p.laser_id;
+		point->classification = p.point.tag;
 		p_count++;
 		coordinates[0] = 0.001 * p.point.x;
 		coordinates[1] = 0.001 * p.point.y;

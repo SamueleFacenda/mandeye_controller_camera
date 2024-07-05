@@ -14,6 +14,7 @@ private:
 
 public:
 	void setBuffer(const std::unordered_map<uint32_t, std::string>& inBuf);
+	void dumpChunkInternally() override {};
 
 protected:
 	void printBufferToFileString(std::stringstream& fss) override;

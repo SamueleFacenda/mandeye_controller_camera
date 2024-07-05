@@ -42,7 +42,8 @@ public:
 	// periodically ask lidars for status
 	void testThread();
 
-	void saveChunkToDirectory(const std::filesystem::path& directory, int chunk) override;
+	void saveDumpedChunkToDirectory(const std::filesystem::path& directory, int chunk) override;
+	void dumpChunkInternally() override;
 
 private:
 	bool isDone{false};
@@ -52,6 +53,8 @@ private:
 
 	LivoxPointsBufferPtr m_bufferLivoxPtr{nullptr};
 	LivoxIMUBufferPtr m_bufferIMUPtr{nullptr};
+
+	LivoxPointsBufferPtr dumpedBufferLivoxPtr{nullptr}; // needed by SaveChunkToDirClient
 
 	std::mutex m_timestampMutex;
 	uint64_t m_timestamp;

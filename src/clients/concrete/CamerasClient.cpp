@@ -46,30 +46,31 @@ void CamerasClient::initializeVideoCapture(int index) {
 	std::cout << "Initialized camera number " << index << std::endl;
 }
 
-void CamerasClient::saveChunkToDirectory(const std::filesystem::path& dirName, int chunkNumber)
+void CamerasClient::saveDumpedChunkToDirectory(const std::filesystem::path& dirName, int chunkNumber)
 {
-	std::vector<VideoWriter> tmpBuffers;
-	std::vector<std::filesystem::path> oldNames;
-	{
-		std::lock_guard<std::mutex> lock(buffersMutex);
-		for(int i=0; i<buffers.size(); i++) {
-			VideoWriter empty;
-			tmpBuffers.push_back(buffers[i]);
-			oldNames.push_back(tmpFiles[i]);
-			buffers[i] = empty;
-			initializeVideoWriter(i);
-		}
-	}
-
 	// parallel for
-	auto range = std::views::iota(0, (int) tmpBuffers.size());
+	auto range = std::views::iota(0, (int) dumpBuffers.size());
 	std::for_each(std::execution::par_unseq, range.begin(), range.end(), [&](int i) {
 		// auto start = std::chrono::steady_clock::now();
-		tmpBuffers[i].release(); // this takes ~0.6s with FFV1, pretty good
+		dumpBuffers[i].release(); // this takes ~0.6s with FFV1, pretty good
 		// std::cout << "Time to save chunk " << i << ": " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() << "ms\n";
-		std::filesystem::rename(oldNames[i], getFinalFilePath(dirName, i, chunkNumber));
+		std::filesystem::rename(dumpNames[i], getFinalFilePath(dirName, i, chunkNumber));
 	});
 }
+
+void CamerasClient::dumpChunkInternally() {
+	dumpBuffers.clear();
+	dumpNames.clear();
+	std::lock_guard<std::mutex> lock(buffersMutex);
+	for(int i=0; i<buffers.size(); i++) {
+		VideoWriter empty;
+		dumpBuffers.push_back(buffers[i]);
+		dumpNames.push_back(tmpFiles[i]);
+		buffers[i] = empty;
+		initializeVideoWriter(i);
+	}
+}
+
 
 std::vector<Mat> CamerasClient::readSyncedImages()
 {

@@ -130,8 +130,12 @@ std::string GNSSClient::GgaToCsvLine(const minmea_sentence_gga& gga, double lase
 }
 
 void GNSSClient::printBufferToFileString(std::stringstream& fss) {
-	for(std::string& i:retrieveData())
+	for(std::string& i:dumpBuffer)
 		fss << i;
+}
+
+void GNSSClient::dumpChunkInternally() {
+	dumpBuffer = retrieveData();
 }
 
 std::string GNSSClient::getFileExtension()

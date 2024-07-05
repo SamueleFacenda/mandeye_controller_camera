@@ -14,6 +14,7 @@ private:
 
 public:
 	void setBuffer(const LivoxIMUBufferPtr& inBuf);
+	void dumpChunkInternally() override {};
 
 protected:
 	void printBufferToFileString(std::stringstream& fss) override;

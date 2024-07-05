@@ -18,7 +18,7 @@ namespace mandeye
 
 class GNSSClient : public TimeStampReceiver, public SaveChunkInFileClient, public LoggerClient, public JsonStateProducer
 {
-private:
+protected:
 	void printBufferToFileString(std::stringstream& fss) override;
 	std::string getFileExtension() override;
 	std::string getFileIdentifier() override;
@@ -26,6 +26,8 @@ private:
 public:
 	nlohmann::json produceStatus() override;
 	std::string getJsonName() override;
+
+	void dumpChunkInternally() override;
 
 	//! Spins up a thread that reads from the serial port
 	bool startListener(const std::string& portName, int baudRate);
@@ -50,6 +52,7 @@ private:
 	std::thread m_serialPortThread;
 	std::string m_portName;
 	int m_baudRate {0};
+	std::deque<std::string> dumpBuffer; // needed by SaveChunkInDirClient
 	void worker();
 
 	bool init_succes{false};

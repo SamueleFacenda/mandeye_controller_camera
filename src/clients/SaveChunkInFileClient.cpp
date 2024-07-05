@@ -5,7 +5,7 @@
 namespace mandeye
 {
 
-void SaveChunkInFileClient::saveChunkToDirectory(const std::filesystem::path& directory, int chunk) {
+void SaveChunkInFileClient::saveDumpedChunkToDirectory(const std::filesystem::path& directory, int chunk) {
 	std::ofstream outs;
 	bool retFileOpen = getSavingStream(outs, directory, chunk);
 	if (!retFileOpen)
