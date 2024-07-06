@@ -79,7 +79,7 @@ private:
 	std::set<std::string> m_serialNumbers;
 
 	bool init_succes{false};
-	uint64_t systemTimestampDelay;
+	uint64_t systemTimestampDelay{};
 
 	//! converts a handle to a lidar id. The logic is as follows:
 	//! id is zero for lidar with smallest Serial number

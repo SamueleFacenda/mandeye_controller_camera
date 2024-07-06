@@ -13,12 +13,10 @@ namespace mandeye
 LivoxClient::LivoxClient() : imuIteratorToFileSaver("csv", "imu", [](const LivoxIMU& imu) {
 	std::stringstream ss;
 	ss << imu.timestamp << " " << imu.point.gyro_x << " " << imu.point.gyro_y << " " << imu.point.gyro_z << " " << imu.point.acc_x << " "
-	   << imu.point.acc_y << " " << imu.point.acc_z << " " << imu.laser_id << std::endl;
+	   << imu.point.acc_y << " " << imu.point.acc_z << " " << imu.laser_id;
 	return ss.str();
 }), lidarIteratorToFileSaver("lidar", "ls", [](const std::pair<const uint32_t, std::string>& id_sn) {
-	std::stringstream ss;
-	ss << id_sn.first << " " << id_sn.second << "\n";
-	return ss.str();
+	return std::to_string(id_sn.first) + " " + id_sn.second;
 }) {
 	m_timestamp = -1;
 }

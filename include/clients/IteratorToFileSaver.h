@@ -28,7 +28,7 @@ public:
 protected:
 	void printBufferToFileString(std::stringstream& fss) override {
 		for (auto it = start; it != end; ++it)
-			fss << func(*it);
+			fss << func(*it) << std::endl;
 	};
 	std::string getFileExtension() override { return fileExtension; };
 	std::string getFileIdentifier() override { return fileIdentifier; };

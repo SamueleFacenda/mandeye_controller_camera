@@ -4,6 +4,7 @@
 #include "clients/LoggerClient.h"
 #include "clients/SaveChunkToDirClient.h"
 #include "clients/TimeStampReceiver.h"
+#include "clients/IteratorToFileSaver.h"
 #include <atomic>
 #include <filesystem>
 #include <opencv2/opencv.hpp>
@@ -29,7 +30,7 @@ class CamerasClient : public TimeStampReceiver, public SaveChunkToDirClient, pub
 		std::vector<double> timestamps;
 		std::vector<cv::VideoWriter> dumpBuffers; // needed by SaveChunkToDirClient
 		std::vector<std::filesystem::path> dumpTmpFiles;
-		std::vector<double> dumpTimestamps;
+		IteratorToFileSaver<std::vector, double> timestampSaver;
 
 		void initializeVideoCapture(int index);
 		void addImagesToBuffer(const std::vector<cv::Mat>& images, double timestamp);

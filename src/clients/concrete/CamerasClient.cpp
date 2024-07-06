@@ -13,6 +13,7 @@ namespace mandeye {
 using namespace cv;
 
 CamerasClient::CamerasClient(const std::vector<int>& cameraIndexes, const std::string& savingMediaPath)
+	: timestampSaver("txt", "photos_timestamps", [](double timestamp) { return std::to_string(timestamp); })
 {
 	isLogging.store(false);
 	tmpDir = std::filesystem::path(savingMediaPath) / ".mandeye_cameras_tmp";
@@ -48,6 +49,7 @@ void CamerasClient::initializeVideoCapture(int index) {
 
 void CamerasClient::saveDumpedChunkToDirectory(const std::filesystem::path& dirName, int chunkNumber)
 {
+	timestampSaver.saveDumpedChunkToDirectory(dirName, chunkNumber);
 	// parallel for
 	auto range = std::views::iota(0, (int) dumpBuffers.size());
 	std::for_each(std::execution::par_unseq, range.begin(), range.end(), [&](int i) {
@@ -69,7 +71,7 @@ void CamerasClient::dumpChunkInternally() {
 		buffers[i] = empty;
 		initializeVideoWriter(i);
 	}
-	dumpTimestamps = timestamps;
+	timestampSaver.setBuffer(timestamps.begin(), timestamps.end());
 	timestamps.clear();
 }
 
