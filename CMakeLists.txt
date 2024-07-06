@@ -55,7 +55,6 @@ add_executable(control_program
         src/utils/save_laz.cpp
         src/clients/TimeStampReceiver.cpp
         src/clients/SaveChunkInFileClient.cpp
-        src/clients/IteratorToFileSaver.cpp
         src/clients/concrete/GnssClient.cpp
         src/clients/concrete/LivoxClient.cpp
         src/clients/concrete/GpioClient.cpp

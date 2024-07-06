@@ -15,9 +15,9 @@ LivoxClient::LivoxClient() : imuIteratorToFileSaver("csv", "imu", [](const Livox
 	ss << imu.timestamp << " " << imu.point.gyro_x << " " << imu.point.gyro_y << " " << imu.point.gyro_z << " " << imu.point.acc_x << " "
 	   << imu.point.acc_y << " " << imu.point.acc_z << " " << imu.laser_id << std::endl;
 	return ss.str();
-}), lidarIteratorToFileSaver("lidar", "ls", [](uint32_t id, std::string sn) {
+}), lidarIteratorToFileSaver("lidar", "ls", [](const std::pair<const uint32_t, std::string>& id_sn) {
 	std::stringstream ss;
-	ss << id << " " << sn << "\n";
+	ss << id_sn.first << " " << id_sn.second << "\n";
 	return ss.str();
 }) {
 	m_timestamp = -1;

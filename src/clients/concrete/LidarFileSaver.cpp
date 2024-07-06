@@ -4,6 +4,8 @@ namespace mandeye
 {
 
 void LidarFileSaver::printBufferToFileString(std::stringstream& fss) {
+	auto it = buffer.begin();
+	auto itt = *it;
 	for(const auto& [id, sn] : buffer)
 	{
 		fss << id << " " << sn << "\n";
