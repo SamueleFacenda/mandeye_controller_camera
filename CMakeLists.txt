@@ -60,8 +60,7 @@ add_executable(control_program
         src/clients/concrete/GpioClient.cpp
         src/clients/concrete/FileSystemClient.cpp
         src/clients/concrete/CamerasClient.cpp
-        src/clients/concrete/ImuFileSaver.cpp
-        src/clients/concrete/LidarFileSaver.cpp)
+)
 
 target_include_directories(control_program
         PUBLIC include
