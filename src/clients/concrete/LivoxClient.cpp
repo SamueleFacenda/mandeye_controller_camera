@@ -19,7 +19,9 @@ LivoxClient::LivoxClient() : imuIteratorToFileSaver("csv", "imu", [](const Livox
 	std::stringstream ss;
 	ss << id << " " << sn << "\n";
 	return ss.str();
-}) {}
+}) {
+	m_timestamp = -1;
+}
 
 std::string ReplaceAll(std::string str, const std::string& from, const std::string& to)
 {
@@ -263,8 +265,11 @@ void LivoxClient::PointCloudCallback(uint32_t handle,
 		std::memcpy(toUint64.array, data->timestamp, sizeof(uint64_t));
 		{
 			std::lock_guard<std::mutex> lcK(this_ptr->m_timestampMutex);
-			this_ptr->m_timestamp = toUint64.data;
-			this_ptr->m_handleToLastTimestamp[handle] = toUint64.data;
+			if (this_ptr->m_timestamp == -1) {
+				this_ptr->systemTimestampDelay = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - toUint64.data;
+			}
+			this_ptr->m_timestamp = toUint64.data + this_ptr->systemTimestampDelay;
+			this_ptr->m_handleToLastTimestamp[handle] = toUint64.data + this_ptr->systemTimestampDelay;
 		}
 
 		if(this_ptr->m_bufferLivoxPtr == nullptr)
@@ -278,7 +283,7 @@ void LivoxClient::PointCloudCallback(uint32_t handle,
 			LivoxPoint point;
 			point.point = p_point_data[i];
 			point.laser_id = laser_id;
-			point.timestamp = toUint64.data + i * data->time_interval;
+			point.timestamp = toUint64.data + i * data->time_interval + this_ptr->systemTimestampDelay;
 			if(point.timestamp > 0){
 				buffer->push_back(point);
 			}
