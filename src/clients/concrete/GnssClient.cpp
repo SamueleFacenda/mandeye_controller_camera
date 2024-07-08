@@ -5,6 +5,10 @@
 #include <thread>
 namespace mandeye
 {
+
+GNSSClient::GNSSClient()
+	: bufferSaver("gnss", "gnss", [](const std::string& in) { return in; }) {}
+
 nlohmann::json GNSSClient::produceStatus()
 {
 	nlohmann::json data;
@@ -129,28 +133,18 @@ std::string GNSSClient::GgaToCsvLine(const minmea_sentence_gga& gga, double lase
 	return oss.str();
 }
 
-void GNSSClient::printBufferToFileString(std::stringstream& fss) {
-	for(std::string& i:dumpBuffer)
-		fss << i;
-}
-
-void GNSSClient::dumpChunkInternally() {
-	dumpBuffer = retrieveData();
-}
-
-std::string GNSSClient::getFileExtension()
-{
-	return "gnss";
-}
-
-std::string GNSSClient::getFileIdentifier()
-{
-	return "gnss";
-}
-
 std::string GNSSClient::getJsonName()
 {
 	return "gnss";
+}
+
+void GNSSClient::dumpChunkInternally() {
+	auto tmp = retrieveData();
+	bufferSaver.setBuffer(tmp.begin(), tmp.end());
+}
+
+void GNSSClient::saveDumpedChunkToDirectory(const std::filesystem::path& directory, int chunk) {
+	bufferSaver.saveDumpedChunkToDirectory(directory, chunk);
 }
 
 } // namespace mandeye

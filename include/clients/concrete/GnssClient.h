@@ -6,7 +6,8 @@
 
 #include "clients/TimeStampReceiver.h"
 #include "clients/LoggerClient.h"
-#include "clients/SaveChunkInFileClient.h"
+#include "clients/SaveChunkToDirClient.h"
+#include "clients/IteratorToFileSaver.h"
 #include "clients/JsonStateProducer.h"
 #include "minmea.h"
 #include "thread"
@@ -16,18 +17,14 @@ namespace mandeye
 {
 
 
-class GNSSClient : public TimeStampReceiver, public SaveChunkInFileClient, public LoggerClient, public JsonStateProducer
+class GNSSClient : public TimeStampReceiver, public SaveChunkToDirClient, public LoggerClient, public JsonStateProducer
 {
-protected:
-	void printBufferToFileString(std::stringstream& fss) override;
-	std::string getFileExtension() override;
-	std::string getFileIdentifier() override;
 
 public:
+	GNSSClient();
+
 	nlohmann::json produceStatus() override;
 	std::string getJsonName() override;
-
-	void dumpChunkInternally() override;
 
 	//! Spins up a thread that reads from the serial port
 	bool startListener(const std::string& portName, int baudRate);
@@ -41,6 +38,9 @@ public:
 	//! Retrieve all data from the buffer, in form of CSV lines
 	std::deque<std::string> retrieveData();
 
+	void dumpChunkInternally() override;
+	void saveDumpedChunkToDirectory(const std::filesystem::path& directory, int chunk) override;
+
 private:
 	std::mutex m_bufferMutex;
 	std::deque<std::string> m_buffer;
@@ -52,7 +52,7 @@ private:
 	std::thread m_serialPortThread;
 	std::string m_portName;
 	int m_baudRate {0};
-	std::deque<std::string> dumpBuffer; // needed by SaveChunkInDirClient
+	IteratorToFileSaver<std::deque, std::string> bufferSaver;
 	void worker();
 
 	bool init_succes{false};

@@ -121,8 +121,10 @@ void CamerasClient::addImagesToBuffer(const std::vector<Mat>& images, double tim
 		return; // recheck (strange things can happen in multithreading)
 
 	timestamps.emplace_back(timestamp);
+	auto now = std::chrono::system_clock::now();
 	for(int i=0; i<buffers.size(); i++)
 		buffers[i] << images[i];
+	std::cout << "Time to add images to buffer: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - now).count() << "ms\n";
 	// std::cout << "Added images to buffer, current size: " << buffers[0].size() << std::endl;
 }
 
