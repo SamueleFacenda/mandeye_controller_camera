@@ -111,14 +111,11 @@ using namespace std::chrono_literals;
 
 void stateWatcher()
 {
-	std::chrono::steady_clock::time_point chunkStart = std::chrono::steady_clock::now();
-	std::chrono::steady_clock::time_point stopScanDeadline = std::chrono::steady_clock::now();
-	std::chrono::steady_clock::time_point stopScanInitialDeadline = std::chrono::steady_clock::now();
+	std::chrono::steady_clock::time_point chunkStart, stopScanDeadline, stopScanInitialDeadline, now;
 	States oldState = States::IDLE;
-	std::string continousScanDirectory;
-	std::string stopScanDirectory;
-	int chunksInExperimentCS{0};
-	int chunksInExperimentSS{0};
+	std::string continousScanDirectory, stopScanDirectory;
+	int chunksInExperimentCS = 0, chunksInExperimentSS = 0;
+	bool savingDone;
 
 	int id_manifest = 0;
 	if (stopScanDirectory.empty() && fileSystemClientPtr)
@@ -143,144 +140,125 @@ void stateWatcher()
 		}
 		oldState = app_state;
 
-		if(app_state == States::LIDAR_ERROR){
-			if(gpioClientPtr){
-				gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_STOP_SCAN, false);
-				gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, false);
-				std::this_thread::sleep_for(1000ms);
-				gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_STOP_SCAN, true);
-				gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, true);
-				std::this_thread::sleep_for(1000ms);
-			}
+		switch (app_state) {
+		case States::LIDAR_ERROR:
+			gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_STOP_SCAN, false);
+			gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, false);
+			std::this_thread::sleep_for(1000ms);
+			gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_STOP_SCAN, true);
+			gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, true);
+			std::this_thread::sleep_for(1000ms);
 			std::cout << "app_state == States::LIDAR_ERROR" << std::endl;
-		}
-		else if(app_state == States::USB_IO_ERROR){
-			if(gpioClientPtr){
-				gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_STOP_SCAN, false);
-				gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, false);
-				utils::blinkLed(GpioClient::LED::LED_GPIO_COPY_DATA, 1s);
-			}
-			std::cout << "app_state == States::USB_IO_ERROR" << std::endl;
-		}
-		else if(app_state == States::WAIT_FOR_RESOURCES)
-		{
-			std::this_thread::sleep_for(100ms);
-			if (initializationLatch.load() == 0)
-			{
-				app_state = States::IDLE;
-			}
-		}
-		else if(app_state == States::IDLE)
-		{
-			if(gpioClientPtr)
-			{
-				gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_STOP_SCAN, false);
-				gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, false);
-			}
-			std::this_thread::sleep_for(100ms);
-		}
-		else if(app_state == States::STARTING_SCAN)
-		{
-			if(gpioClientPtr)
-			{
-				gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_STOP_SCAN, false);
-				utils::blinkLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, 100ms);
-				utils::blinkLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, 100ms);
-			}
 
-			for(auto& client: loggerClients)
+			break;
+		case States::USB_IO_ERROR:
+			gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_STOP_SCAN, false);
+			gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, false);
+			utils::blinkLed(GpioClient::LED::LED_GPIO_COPY_DATA, 1s);
+			std::cout << "app_state == States::USB_IO_ERROR" << std::endl;
+
+			break;
+		case States::WAIT_FOR_RESOURCES:
+			std::this_thread::sleep_for(100ms);
+			if(initializationLatch.load() == 0)
+				app_state = States::IDLE;
+
+			break;
+		case States::IDLE:
+			gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_STOP_SCAN, false);
+			gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, false);
+			std::this_thread::sleep_for(100ms);
+
+			break;
+		case States::STARTING_SCAN:
+			gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_STOP_SCAN, false);
+			utils::blinkLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, 100ms);
+			utils::blinkLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, 100ms);
+
+			for(auto& client : loggerClients)
 				client->startLog();
 
 			app_state = States::SCANNING;
 			chunkStart = std::chrono::steady_clock::now();
-		}
-		else if(app_state == States::SCANNING)
-		{
-			if(gpioClientPtr)
-			{
-				gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, true);
-			}
 
-			const auto now = std::chrono::steady_clock::now();
+			break;
+		case States::SCANNING:
+			gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, true);
+
+			now = std::chrono::steady_clock::now();
 			if(now - chunkStart > 60s)
-			{
 				utils::blinkLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, 1000ms);
-			}
 			if(now - chunkStart > 600s)
-			{
 				utils::blinkLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, 100ms);
-			}
+
 			if(now - chunkStart > CONTINOUS_SCAN_SAVE_INTERVAL)
 			{
 				chunkStart = std::chrono::steady_clock::now();
 
-				bool savingDone = saveChunkToDisk(continousScanDirectory, chunksInExperimentCS + chunksInExperimentSS);
-				if (savingDone)
-				{
+				savingDone = saveChunkToDisk(continousScanDirectory, chunksInExperimentCS + chunksInExperimentSS);
+				if(savingDone)
 					chunksInExperimentCS++;
-				}
 			}
 			std::this_thread::sleep_for(100ms);
-		}
-		else if(app_state == States::STOPPING)
-		{
+
+			break;
+		case States::STOPPING:
 			gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, true);
-			bool savingDone = saveChunkToDisk(continousScanDirectory, chunksInExperimentCS + chunksInExperimentSS);
-			if (savingDone)
+			savingDone = saveChunkToDisk(continousScanDirectory, chunksInExperimentCS + chunksInExperimentSS);
+			if(savingDone)
 			{
 				chunksInExperimentCS++;
 				app_state = States::IDLE;
 
-				for(auto& client: loggerClients)
+				for(auto& client : loggerClients)
 					client->stopLog();
 			}
-		}
-		else if(app_state == States::STARTING_STOP_SCAN)
-		{
-			if(gpioClientPtr)
-			{
-				gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_STOP_SCAN, false);
-				gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, false);
-			}
+
+			break;
+		case States::STARTING_STOP_SCAN:
+			gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_STOP_SCAN, false);
+			gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, false);
 
 			stopScanInitialDeadline = std::chrono::steady_clock::now() + STOP_SCAN_DELAY; // wait STOP_SCAN_DELAY before starting
 
 			stopScanDeadline = stopScanInitialDeadline + STOP_SCAN_DURATION;
 
 			app_state = States::STOP_SCAN_IN_INITIAL_PROGRESS;
-		}
-		else if(app_state == States::STOP_SCAN_IN_INITIAL_PROGRESS){
-			const auto now = std::chrono::steady_clock::now();
 
-			if(now < stopScanInitialDeadline){
+			break;
+		case States::STOP_SCAN_IN_INITIAL_PROGRESS:
+			now = std::chrono::steady_clock::now();
+
+			if(now < stopScanInitialDeadline)
 				utils::blinkLed(GpioClient::LED::LED_GPIO_STOP_SCAN, 100ms);
-			}else{
+			else
+			{
 				gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_STOP_SCAN, true);
-				for(auto& client: loggerClients)
+				for(auto& client : loggerClients)
 					client->startLog();
 
 				app_state = States::STOP_SCAN_IN_PROGRESS;
 			}
-		}
-		else if(app_state == States::STOP_SCAN_IN_PROGRESS)
-		{
-			const auto now = std::chrono::steady_clock::now();
-			if(now > stopScanDeadline){
+
+			break;
+		case States::STOP_SCAN_IN_PROGRESS:
+			now = std::chrono::steady_clock::now();
+			if(now > stopScanDeadline)
 				app_state = States::STOPPING_STOP_SCAN;
-			}
-		}
-		else if(app_state == States::STOPPING_STOP_SCAN)
-		{
-			bool savingDone = saveChunkToDisk(stopScanDirectory, chunksInExperimentCS + chunksInExperimentSS);
-			if (savingDone)
+
+			break;
+		case States::STOPPING_STOP_SCAN:
+			savingDone = saveChunkToDisk(stopScanDirectory, chunksInExperimentCS + chunksInExperimentSS);
+			if(savingDone)
 			{
-				for(auto& client: loggerClients)
+				for(auto& client : loggerClients)
 					client->stopLog();
 
 				chunksInExperimentSS++;
 				app_state = States::IDLE;
 				gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_STOP_SCAN, false);
 			}
+			break;
 		}
 	}
 }

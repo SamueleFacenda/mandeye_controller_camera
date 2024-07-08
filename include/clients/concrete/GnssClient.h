@@ -13,12 +13,11 @@
 #include "thread"
 #include <SerialPort.h>
 #include <SerialStream.h>
-namespace mandeye
-{
+
+namespace mandeye {
 
 
-class GNSSClient : public TimeStampReceiver, public SaveChunkToDirClient, public LoggerClient, public JsonStateProducer
-{
+class GNSSClient : public TimeStampReceiver, public SaveChunkToDirClient, public LoggerClient, public JsonStateProducer {
 
 public:
 	GNSSClient();
@@ -38,8 +37,8 @@ public:
 	//! Retrieve all data from the buffer, in form of CSV lines
 	std::deque<std::string> retrieveData();
 
-	void dumpChunkInternally() override;
 	void saveDumpedChunkToDirectory(const std::filesystem::path& directory, int chunk) override;
+	void dumpChunkInternally() override;
 
 private:
 	std::mutex m_bufferMutex;
