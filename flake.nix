@@ -21,6 +21,7 @@
 
             nativeBuildInputs = with pkgs; [
               cmake
+              pkg-config
             ];
             buildInputs = with pkgs; [
               libserial
@@ -67,6 +68,7 @@
           default = pkgs.mkShell {
             nativeBuildInputs = with pkgs; [
               cmake
+              pkg-config
             ];
             buildInputs = with pkgs; [
               self.packages.${system}.libserial

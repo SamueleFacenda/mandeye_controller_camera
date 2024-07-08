@@ -45,6 +45,10 @@ find_library(LIBSERIAL_LIBRARY
 include_directories(3rd/minmea ${LIBSERIAL_INCLUDE_DIR})
 add_library(minea STATIC 3rd/minmea/minmea.c)
 
+# Tbb
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(TBB REQUIRED tbb)
+
 find_package(OpenCV REQUIRED)
 
 #executable
@@ -65,8 +69,8 @@ target_include_directories(control_program
         PUBLIC include
         SYSTEM ${OpenCV_INCLUDE_DIRS})
 
-set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -latomic -ltbb")
-target_link_libraries(control_program livox_lidar_sdk_static cppgpio-static pistache atomic laszip ${LIBSERIAL_LIBRARY} minea ${OpenCV_LIBS})
+set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -latomic")
+target_link_libraries(control_program livox_lidar_sdk_static cppgpio-static pistache atomic laszip ${LIBSERIAL_LIBRARY} minea ${OpenCV_LIBS} ${TBB_LIBRARIES})
 
 add_executable(led_demo src/demos/led_demo.cpp src/clients/concrete/GpioClient.cpp)
 target_include_directories(led_demo PRIVATE include)
