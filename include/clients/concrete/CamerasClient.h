@@ -8,8 +8,20 @@
 #include <atomic>
 #include <filesystem>
 #include <opencv2/opencv.hpp>
+#include <thread>
 
 namespace mandeye {
+
+struct ImageInfo {
+	std::filesystem::path path;
+	uint64_t timestamp;
+	int cameraIndex;
+};
+
+struct StampedImage {
+	cv::Mat image;
+	uint64_t timestamp;
+};
 
 class CamerasClient : public TimeStampReceiver, public SaveChunkToDirClient, public LoggerClient {
 	public:
@@ -23,21 +35,20 @@ class CamerasClient : public TimeStampReceiver, public SaveChunkToDirClient, pub
 	private:
 		std::filesystem::path tmpDir; // on the final media device
 		std::vector<cv::VideoCapture> caps;
-		std::mutex buffersMutex;
-		std::vector<cv::VideoWriter> buffers;
+		std::mutex bufferMutex;
+		std::vector<ImageInfo> imagesBuffer;
 		std::atomic<bool> isLogging{false};
-		std::vector<std::filesystem::path> tmpFiles;
-		std::vector<uint64_t> timestamps;
-		std::vector<cv::VideoWriter> dumpBuffers; // needed by SaveChunkToDirClient
-		std::vector<std::filesystem::path> dumpTmpFiles;
-		IterableToFileSaver<std::vector, uint64_t> timestampSaver;
+		std::vector<ImageInfo> dumpBuffer; // needed by SaveChunkToDirClient
+		std::thread imagesWriterThread;
+		std::vector<StampedImage> writeBuffer;
+		std::mutex emptyBufferLock, fullBufferLock; // there is the imagesWriterThread and the main thread, consuming and producing respectively
 
 		void initializeVideoCapture(int index);
-		void addImagesToBuffer(const std::vector<cv::Mat>& images, uint64_t timestamp);
-		void initializeVideoWriter(int index);
+		void writeImagesToDiskAndAddToBuffer(const std::vector<StampedImage>& images);
+		void writeImages(); // thread
 		std::vector<cv::Mat> readSyncedImages();
-		std::filesystem::path getTmpFilePath(int cameraIndex);
-		static std::filesystem::path getFinalFilePath(const std::filesystem::path& outDir, int cameraIndex, int chunk);
+		std::filesystem::path generateTmpFilePath();
+		static std::filesystem::path getFinalFilePath(const std::filesystem::path& outDir, int cameraIndex, int chunk, uint64_t timestamp);
 };
 
 } // namespace mandeye

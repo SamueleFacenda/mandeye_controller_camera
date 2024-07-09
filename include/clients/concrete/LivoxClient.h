@@ -11,7 +11,6 @@
 #include <livox_lidar_def.h>
 #include <mutex>
 #include <thread>
-#include <tiff.h>
 
 namespace mandeye
 {
@@ -39,7 +38,7 @@ public:
 	std::unordered_map<uint32_t, std::string> getSerialNumberToLidarIdMapping() const;
 
 	// TimeStampProvider overrides ...
-	uint64 getTimestamp() override;
+	uint64_t getTimestamp() override;
 
 	// periodically ask lidars for status
 	void testThread();
