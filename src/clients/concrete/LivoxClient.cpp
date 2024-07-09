@@ -318,7 +318,7 @@ void LivoxClient::ImuDataCallback(uint32_t handle,
 		std::memcpy(toUint64.array, data->timestamp, sizeof(uint64_t));
 		{
 			std::lock_guard<std::mutex> lcK(this_ptr->m_timestampMutex);
-			this_ptr->m_timestamp = toUint64.data;
+			this_ptr->m_timestamp = toUint64.data + this_ptr->systemTimestampDelay;
 		}
 		if(this_ptr->m_bufferIMUPtr == nullptr)
 		{

@@ -85,7 +85,7 @@ bool TriggerContinousScanning(){
 	return false;
 }
 
-bool saveChunkToDisk(const std::string& outDirectory, int chunk)
+bool saveChunkToDisk(const std::string& outDirectory, int chunk, bool stopScan)
 {
 	if(outDirectory.empty())
 	{
@@ -97,8 +97,12 @@ bool saveChunkToDisk(const std::string& outDirectory, int chunk)
 	for(auto& client: saveableClients)
 		client->dumpChunkInternally(); // instant dump
 
+	if(stopScan)
+		for(auto& client: loggerClients)
+			client->stopLog();
+
 	// parallelize the saving of the chunks
-	std::for_each(std::execution::par, saveableClients.begin(), saveableClients.end(), [&outDirectory, chunk](auto& client){
+	std::for_each(std::execution::par_unseq, saveableClients.begin(), saveableClients.end(), [&outDirectory, chunk](auto& client){
 		client->saveDumpedChunkToDirectory(outDirectory, chunk);
 	});
 
@@ -195,7 +199,7 @@ void stateWatcher()
 			{
 				chunkStart = std::chrono::steady_clock::now();
 
-				savingDone = saveChunkToDisk(continousScanDirectory, chunksInExperimentCS + chunksInExperimentSS);
+				savingDone = saveChunkToDisk(continousScanDirectory, chunksInExperimentCS + chunksInExperimentSS, false);
 				if(savingDone)
 					chunksInExperimentCS++;
 			}
@@ -204,14 +208,11 @@ void stateWatcher()
 			break;
 		case States::STOPPING:
 			gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, true);
-			savingDone = saveChunkToDisk(continousScanDirectory, chunksInExperimentCS + chunksInExperimentSS);
+			savingDone = saveChunkToDisk(continousScanDirectory, chunksInExperimentCS + chunksInExperimentSS, true);
 			if(savingDone)
 			{
 				chunksInExperimentCS++;
 				app_state = States::IDLE;
-
-				for(auto& client : loggerClients)
-					client->stopLog();
 			}
 
 			break;
@@ -248,12 +249,9 @@ void stateWatcher()
 
 			break;
 		case States::STOPPING_STOP_SCAN:
-			savingDone = saveChunkToDisk(stopScanDirectory, chunksInExperimentCS + chunksInExperimentSS);
+			savingDone = saveChunkToDisk(stopScanDirectory, chunksInExperimentCS + chunksInExperimentSS, true);
 			if(savingDone)
 			{
-				for(auto& client : loggerClients)
-					client->stopLog();
-
 				chunksInExperimentSS++;
 				app_state = States::IDLE;
 				gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_STOP_SCAN, false);

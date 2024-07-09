@@ -88,7 +88,6 @@ private:
 	IterableToFileSaver<std::deque, LivoxIMU> imuIteratorToFileSaver;
 	IterableToFileSaver<std::unordered_map, uint32_t, std::string> lidarIteratorToFileSaver;
 	std::shared_ptr<std::deque<LivoxIMU>> dumpedBufferImuPtr;
-	std::unordered_map<uint32_t, std::string> dumpedSerialNumberToLidarIdMapping;
 
 
 	static constexpr char config[] =

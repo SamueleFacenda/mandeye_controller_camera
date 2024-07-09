@@ -8,6 +8,12 @@
 #define CAMERA_HEIGHT 1080
 #define EXPECTED_FPS 10
 
+// #define VIDEO_CODEC 'H','Y','M','T'
+// #define VIDEO_CODEC 'H','F','Y','U'
+#define VIDEO_CODEC 'M','J','P','G'
+#define VIDEO_EXTENSION ".avi"
+#define VIDEOWRITER_BACKEND CAP_OPENCV_MJPEG
+
 namespace mandeye {
 
 using namespace cv;
@@ -121,9 +127,11 @@ void CamerasClient::addImagesToBuffer(const std::vector<Mat>& images, uint64_t t
 		return; // recheck (strange things can happen in multithreading)
 
 	timestamps.emplace_back(timestamp);
+	auto now = std::chrono::system_clock::now();
 	for(int i=0; i<buffers.size(); i++)
-		buffers[i] << images[i];
-	// std::cout << "Added images to buffer, current size: " << buffers[0].size() << std::endl;
+		imwrite("/tmp/test.jpg", images[i], {IMWRITE_JPEG_QUALITY, 100});
+		// buffers[i] << images[i];
+	std::cout << "Image added in " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - now).count() << "ms\n";
 }
 
 void CamerasClient::startLog() {
@@ -142,22 +150,18 @@ void CamerasClient::stopLog() {
 
 std::filesystem::path CamerasClient::getTmpFilePath(int cameraIndex) {
 	// add random number to avoid conflicts
-	return tmpDir / ("camera_" + std::to_string(cameraIndex) + "_" +std::to_string((int)(rand()%10000)) + ".mkv");
+	return tmpDir / ("camera_" + std::to_string(cameraIndex) + "_" +std::to_string((int)(rand()%10000)) + VIDEO_EXTENSION);
 }
 
 std::filesystem::path CamerasClient::getFinalFilePath(const std::filesystem::path& outDir, int cameraIndex, int chunk) {
 	// camera_0_chunk_0001.mp4
-	return outDir / ("camera_" + std::to_string(cameraIndex) + "_chunk_" + std::string(chunk ? 3 - (int) log10(chunk) : 3, '0') + std::to_string(chunk) + ".mkv");
+	return outDir / ("camera_" + std::to_string(cameraIndex) + "_chunk_" + std::string(chunk ? 3 - (int) log10(chunk) : 3, '0') + std::to_string(chunk) + VIDEO_EXTENSION);
 }
 
 void CamerasClient::initializeVideoWriter(int index) {
-	// h264 can be changed to something properly lossless or h265 (better encoding, x10/x20 encoding time, according to some random blog post I found)
-	// avc1 or mp4v can be used for h264
-	// int fourcc = VideoWriter::fourcc('a','v','c','1');
-	// int fourcc = VideoWriter::fourcc('F','F','V','1');
-	int fourcc = VideoWriter::fourcc('M','J','P','G');
+	int fourcc = VideoWriter::fourcc(VIDEO_CODEC);
 	tmpFiles[index] = getTmpFilePath(index);
-	buffers[index].open(tmpFiles[index], fourcc, EXPECTED_FPS, Size(CAMERA_WIDTH, CAMERA_HEIGHT));
+	buffers[index].open(tmpFiles[index], VIDEOWRITER_BACKEND, fourcc, EXPECTED_FPS, Size(CAMERA_WIDTH, CAMERA_HEIGHT));
 }
 
 } // namespace mandeye
