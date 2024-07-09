@@ -71,7 +71,7 @@ void GNSSClient::worker()
 			bool isGGA = minmea_parse_gga(&gga, line.c_str());
 			if (isGGA)
 			{
-				double laserTimestamp = GetTimeStamp();
+				uint64_t laserTimestamp = GetTimeStamp();
 				std::string csvline = GgaToCsvLine(gga, laserTimestamp);
 				std::lock_guard<std::mutex> lock(m_bufferMutex);
 				std::swap(m_lastLine, line);
@@ -117,10 +117,10 @@ std::deque<std::string> GNSSClient::retrieveData()
 }
 
 //! Convert a minmea_sentence_gga to a CSV line
-std::string GNSSClient::GgaToCsvLine(const minmea_sentence_gga& gga, double laserTimestamp)
+std::string GNSSClient::GgaToCsvLine(const minmea_sentence_gga& gga, uint64_t laserTimestamp)
 {
 	std:std::stringstream oss;
-	oss << std::setprecision(20) << static_cast<uint_least64_t>(laserTimestamp * 1000000000.0) << " ";
+	oss << std::setprecision(20) << laserTimestamp << " ";
 	oss << minmea_tocoord(&gga.latitude) << " ";
 	oss	<< minmea_tocoord(&gga.longitude) << " ";
 	oss	<< minmea_tofloat(&gga.altitude) << " ";

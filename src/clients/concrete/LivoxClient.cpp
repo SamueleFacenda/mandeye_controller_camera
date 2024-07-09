@@ -493,10 +493,10 @@ void LivoxClient::LidarInfoChangeCallback(const uint32_t handle,
 		std::cout << " **** Adding lidar " <<sn << " handle " << handle << std::endl;
 	}
 }
-double LivoxClient::getTimestamp()
+uint64_t LivoxClient::getTimestamp()
 {
 	std::lock_guard<std::mutex> lcK(m_timestampMutex);
-	return double(m_timestamp)/1e9;
+	return m_timestamp;
 }
 
 std::unordered_map<uint32_t, std::string> LivoxClient::getSerialNumberToLidarIdMapping() const

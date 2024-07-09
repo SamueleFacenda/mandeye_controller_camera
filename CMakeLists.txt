@@ -70,6 +70,7 @@ target_include_directories(control_program
         SYSTEM ${OpenCV_INCLUDE_DIRS})
 
 set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -latomic")
+message("${TBB_LIBRARIES}")
 target_link_libraries(control_program livox_lidar_sdk_static cppgpio-static pistache atomic laszip ${LIBSERIAL_LIBRARY} minea ${OpenCV_LIBS} ${TBB_LIBRARIES})
 
 add_executable(led_demo src/demos/led_demo.cpp src/clients/concrete/GpioClient.cpp)

@@ -6,6 +6,6 @@ namespace mandeye
 class TimeStampProvider
 {
 public:
-	virtual double getTimestamp() = 0;
+	virtual uint64_t getTimestamp() = 0;
 };
 } // namespace mandeye

@@ -57,7 +57,7 @@ private:
 	bool init_succes{false};
 
 	//! Convert a minmea_sentence_gga to a CSV line
-	std::string GgaToCsvLine(const minmea_sentence_gga& gga, double laserTimestamp);
+	std::string GgaToCsvLine(const minmea_sentence_gga& gga, uint64_t laserTimestamp);
 
 };
 } // namespace mandeye

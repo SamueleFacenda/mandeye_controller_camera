@@ -27,13 +27,13 @@ class CamerasClient : public TimeStampReceiver, public SaveChunkToDirClient, pub
 		std::vector<cv::VideoWriter> buffers;
 		std::atomic<bool> isLogging{false};
 		std::vector<std::filesystem::path> tmpFiles;
-		std::vector<double> timestamps;
+		std::vector<uint64_t> timestamps;
 		std::vector<cv::VideoWriter> dumpBuffers; // needed by SaveChunkToDirClient
 		std::vector<std::filesystem::path> dumpTmpFiles;
-		IteratorToFileSaver<std::vector, double> timestampSaver;
+		IteratorToFileSaver<std::vector, uint64_t> timestampSaver;
 
 		void initializeVideoCapture(int index);
-		void addImagesToBuffer(const std::vector<cv::Mat>& images, double timestamp);
+		void addImagesToBuffer(const std::vector<cv::Mat>& images, uint64_t timestamp);
 		void initializeVideoWriter(int index);
 		std::vector<cv::Mat> readSyncedImages();
 		std::filesystem::path getTmpFilePath(int cameraIndex);

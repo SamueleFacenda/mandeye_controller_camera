@@ -1,16 +1,17 @@
 #ifndef MANDEYE_MULTISENSOR_LIVOXCLIENT_H
 #define MANDEYE_MULTISENSOR_LIVOXCLIENT_H
 
+#include "clients/IteratorToFileSaver.h"
 #include "clients/JsonStateProducer.h"
 #include "clients/LoggerClient.h"
 #include "clients/SaveChunkToDirClient.h"
 #include "clients/TimeStampProvider.h"
-#include "clients/IteratorToFileSaver.h"
 #include "livox_types.h"
 #include <json.hpp>
 #include <livox_lidar_def.h>
 #include <mutex>
 #include <thread>
+#include <tiff.h>
 
 namespace mandeye
 {
@@ -38,7 +39,7 @@ public:
 	std::unordered_map<uint32_t, std::string> getSerialNumberToLidarIdMapping() const;
 
 	// TimeStampProvider overrides ...
-	double getTimestamp() override;
+	uint64 getTimestamp() override;
 
 	// periodically ask lidars for status
 	void testThread();

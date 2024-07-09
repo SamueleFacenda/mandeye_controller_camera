@@ -13,7 +13,7 @@ namespace mandeye {
 using namespace cv;
 
 CamerasClient::CamerasClient(const std::vector<int>& cameraIndexes, const std::string& savingMediaPath)
-	: timestampSaver("txt", "photos_timestamps", [](double timestamp) { return std::to_string(timestamp); })
+	: timestampSaver("txt", "photos_timestamps", [](uint64_t timestamp) { return std::to_string(timestamp); })
 {
 	isLogging.store(false);
 	tmpDir = std::filesystem::path(savingMediaPath) / ".mandeye_cameras_tmp";
@@ -91,7 +91,7 @@ std::vector<Mat> CamerasClient::readSyncedImages()
 }
 
 void CamerasClient::receiveImages() {
-	double lastTimestamp = GetTimeStamp(), currentTimestamp;
+	uint64_t lastTimestamp = GetTimeStamp(), currentTimestamp;
 	std::vector<Mat> currentImages;
 	while(isRunning.load()) {
 		if (!isLogging.load()) {
@@ -106,7 +106,7 @@ void CamerasClient::receiveImages() {
 		currentTimestamp = GetTimeStamp();
 
 		if (currentTimestamp != lastTimestamp) {
-			// std::cout << "Timestamp updated: delay = " << (currentTimestamp - lastTimestamp) << " seconds\n";
+			std::cout << "Timestamp updated: delay = " << (currentTimestamp - lastTimestamp)/1e9 << " seconds\n";
 			lastTimestamp = currentTimestamp;
 			addImagesToBuffer(currentImages, lastTimestamp);
 		}
@@ -115,16 +115,14 @@ void CamerasClient::receiveImages() {
 		cap.release();
 }
 
-void CamerasClient::addImagesToBuffer(const std::vector<Mat>& images, double timestamp) {
+void CamerasClient::addImagesToBuffer(const std::vector<Mat>& images, uint64_t timestamp) {
 	std::lock_guard<std::mutex> lock(buffersMutex);
 	if(!isLogging.load())
 		return; // recheck (strange things can happen in multithreading)
 
 	timestamps.emplace_back(timestamp);
-	auto now = std::chrono::system_clock::now();
 	for(int i=0; i<buffers.size(); i++)
 		buffers[i] << images[i];
-	std::cout << "Time to add images to buffer: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - now).count() << "ms\n";
 	// std::cout << "Added images to buffer, current size: " << buffers[0].size() << std::endl;
 }
 
