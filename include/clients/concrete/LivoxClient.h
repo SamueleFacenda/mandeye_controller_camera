@@ -1,7 +1,7 @@
 #ifndef MANDEYE_MULTISENSOR_LIVOXCLIENT_H
 #define MANDEYE_MULTISENSOR_LIVOXCLIENT_H
 
-#include "clients/IteratorToFileSaver.h"
+#include "clients/IterableToFileSaver.h"
 #include "clients/JsonStateProducer.h"
 #include "clients/LoggerClient.h"
 #include "clients/SaveChunkToDirClient.h"
@@ -85,8 +85,10 @@ private:
 	//! @param handle the handle to convert
 	uint16_t handleToLidarId(uint32_t handle) const;
 
-	IteratorToFileSaver<std::deque, LivoxIMU> imuIteratorToFileSaver;
-	IteratorToFileSaver<std::unordered_map, uint32_t, std::string> lidarIteratorToFileSaver;
+	IterableToFileSaver<std::deque, LivoxIMU> imuIteratorToFileSaver;
+	IterableToFileSaver<std::unordered_map, uint32_t, std::string> lidarIteratorToFileSaver;
+	std::shared_ptr<std::deque<LivoxIMU>> dumpedBufferImuPtr;
+	std::unordered_map<uint32_t, std::string> dumpedSerialNumberToLidarIdMapping;
 
 
 	static constexpr char config[] =

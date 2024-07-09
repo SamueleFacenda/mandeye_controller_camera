@@ -71,7 +71,7 @@ void CamerasClient::dumpChunkInternally() {
 		buffers[i] = empty;
 		initializeVideoWriter(i);
 	}
-	timestampSaver.setBuffer(timestamps.begin(), timestamps.end());
+	timestampSaver.setBuffer(timestamps);
 	timestamps.clear();
 }
 
@@ -154,7 +154,8 @@ void CamerasClient::initializeVideoWriter(int index) {
 	// h264 can be changed to something properly lossless or h265 (better encoding, x10/x20 encoding time, according to some random blog post I found)
 	// avc1 or mp4v can be used for h264
 	// int fourcc = VideoWriter::fourcc('a','v','c','1');
-	int fourcc = VideoWriter::fourcc('F','F','V','1');
+	// int fourcc = VideoWriter::fourcc('F','F','V','1');
+	int fourcc = VideoWriter::fourcc('M','J','P','G');
 	tmpFiles[index] = getTmpFilePath(index);
 	buffers[index].open(tmpFiles[index], fourcc, EXPECTED_FPS, Size(CAMERA_WIDTH, CAMERA_HEIGHT));
 }

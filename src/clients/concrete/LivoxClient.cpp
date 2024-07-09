@@ -525,8 +525,9 @@ uint16_t LivoxClient::handleToLidarId(uint32_t handle) const
 }
 
 void LivoxClient::saveDumpedChunkToDirectory(const std::filesystem::path& directory, int chunk) {
-	lidarIteratorToFileSaver.saveDumpedChunkToDirectory(directory, chunk);
 	imuIteratorToFileSaver.saveDumpedChunkToDirectory(directory, chunk);
+	// lidarIteratorToFileSaver.setBuffer(dumpedSerialNumberToLidarIdMapping.begin(), dumpedSerialNumberToLidarIdMapping.end());
+	lidarIteratorToFileSaver.saveDumpedChunkToDirectory(directory, chunk);
 
 	char pointcloudFileName[64];
 	snprintf(pointcloudFileName, 64, "lidar%04d.laz", chunk);
@@ -539,9 +540,10 @@ void LivoxClient::dumpChunkInternally() {
 	auto [lidarBuffer, imuBuffer] = retrieveData();
 	auto lidarList = getSerialNumberToLidarIdMapping();
 
-	lidarIteratorToFileSaver.setBuffer(lidarList.begin(), lidarList.end());
-	imuIteratorToFileSaver.setBuffer(imuBuffer->begin(), imuBuffer->end());
+	lidarIteratorToFileSaver.setBuffer(lidarList);
+	imuIteratorToFileSaver.setBuffer(*imuBuffer);
 	dumpedBufferLivoxPtr = lidarBuffer;
+	dumpedBufferImuPtr = imuBuffer; // needed to avoid garbage collection
 }
 
 std::string LivoxClient::getJsonName()

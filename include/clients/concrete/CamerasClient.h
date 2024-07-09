@@ -1,10 +1,10 @@
 #ifndef MANDEYE_MULTISENSOR_CAMERASCLIENT_H
 #define MANDEYE_MULTISENSOR_CAMERASCLIENT_H
 
+#include "clients/IterableToFileSaver.h"
 #include "clients/LoggerClient.h"
 #include "clients/SaveChunkToDirClient.h"
 #include "clients/TimeStampReceiver.h"
-#include "clients/IteratorToFileSaver.h"
 #include <atomic>
 #include <filesystem>
 #include <opencv2/opencv.hpp>
@@ -30,7 +30,7 @@ class CamerasClient : public TimeStampReceiver, public SaveChunkToDirClient, pub
 		std::vector<uint64_t> timestamps;
 		std::vector<cv::VideoWriter> dumpBuffers; // needed by SaveChunkToDirClient
 		std::vector<std::filesystem::path> dumpTmpFiles;
-		IteratorToFileSaver<std::vector, uint64_t> timestampSaver;
+		IterableToFileSaver<std::vector, uint64_t> timestampSaver;
 
 		void initializeVideoCapture(int index);
 		void addImagesToBuffer(const std::vector<cv::Mat>& images, uint64_t timestamp);

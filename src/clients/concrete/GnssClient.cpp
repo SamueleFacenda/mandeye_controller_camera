@@ -139,8 +139,7 @@ std::string GNSSClient::getJsonName()
 }
 
 void GNSSClient::dumpChunkInternally() {
-	auto tmp = retrieveData();
-	bufferSaver.setBuffer(tmp.begin(), tmp.end());
+	bufferSaver.setBuffer(retrieveData());
 }
 
 void GNSSClient::saveDumpedChunkToDirectory(const std::filesystem::path& directory, int chunk) {

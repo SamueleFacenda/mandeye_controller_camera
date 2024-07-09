@@ -4,11 +4,11 @@
 #include <deque>
 #include <mutex>
 
-#include "clients/TimeStampReceiver.h"
+#include "clients/IterableToFileSaver.h"
+#include "clients/JsonStateProducer.h"
 #include "clients/LoggerClient.h"
 #include "clients/SaveChunkToDirClient.h"
-#include "clients/IteratorToFileSaver.h"
-#include "clients/JsonStateProducer.h"
+#include "clients/TimeStampReceiver.h"
 #include "minmea.h"
 #include "thread"
 #include <SerialPort.h>
@@ -51,7 +51,7 @@ private:
 	std::thread m_serialPortThread;
 	std::string m_portName;
 	int m_baudRate {0};
-	IteratorToFileSaver<std::deque, std::string> bufferSaver;
+	IterableToFileSaver<std::deque, std::string> bufferSaver;
 	void worker();
 
 	bool init_succes{false};
