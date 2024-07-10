@@ -6,6 +6,7 @@
 
 #define CAMERA_WIDTH 1920
 #define CAMERA_HEIGHT 1080
+#define MAX_FPS 2
 
 namespace mandeye {
 
@@ -78,8 +79,10 @@ std::vector<Mat> CamerasClient::readSyncedImages()
 }
 
 void CamerasClient::receiveImages() {
-	uint64_t lastTimestamp = GetTimeStamp(), currentTimestamp;
+	uint64_t currentTimestamp;
 	std::vector<Mat> currentImages;
+	auto delay = std::chrono::nanoseconds((uint64_t) 1e9 / MAX_FPS);
+
 	while(isRunning.load()) {
 		if (!isLogging.load()) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -89,19 +92,18 @@ void CamerasClient::receiveImages() {
 		// check for the timestamp update (when a pointcloud is received)
 		// should happen 10 times per second (I think that the cameras are faster)
 		// When the timestamp is updated I add the latest images to the buffer
+		auto begin = std::chrono::high_resolution_clock::now();
+
 		currentImages = readSyncedImages();
 		currentTimestamp = GetTimeStamp();
-
-		if (currentTimestamp != lastTimestamp) {
-			std::cout << "Timestamp updated, delay = " << (currentTimestamp - lastTimestamp)/1e9 << " seconds\n";
-			lastTimestamp = currentTimestamp;
-			// producer thread
-			emptyBufferLock.lock();
-			writeBuffer.clear();
-			for(auto& img: currentImages)
-				writeBuffer.push_back({img, currentTimestamp});
-			fullBufferLock.unlock();
-		}
+		// producer thread
+		emptyBufferLock.lock();
+		writeBuffer.clear();
+		for(auto& img: currentImages)
+			writeBuffer.push_back({img, currentTimestamp});
+		fullBufferLock.unlock();
+		auto end = std::chrono::high_resolution_clock::now();
+		std::this_thread::sleep_for(delay - (end - begin));
 	}
 	for(auto& cap: caps)
 		cap.release();
@@ -111,7 +113,9 @@ void CamerasClient::receiveImages() {
 void CamerasClient::writeImages() {
 	while(isRunning.load()) {
 		fullBufferLock.lock();
+		auto now = std::chrono::high_resolution_clock::now();
 		writeImagesToDiskAndAddToBuffer(writeBuffer);
+		std::cout << "Writing images to disk took " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - now).count() << " ms" << std::endl;
 		writeBuffer.clear();
 		emptyBufferLock.unlock();
 	}
@@ -128,9 +132,7 @@ void CamerasClient::writeImagesToDiskAndAddToBuffer(const std::vector<StampedIma
 		tmp.path = generateTmpFilePath();
 		tmp.cameraIndex = i;
 		tmp.timestamp = images[i].timestamp;
-		auto now = std::chrono::system_clock::now();
-		imwrite(tmp.path, images[i].image, {IMWRITE_JPEG_QUALITY, 95});
-		std::cout << "Writing images to disk took " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - now).count() << " ms\n";
+		imwrite(tmp.path, images[i].image, {IMWRITE_JPEG_QUALITY, 100});
 		imagesBuffer.push_back(tmp);
 	}
 }
@@ -149,15 +151,15 @@ void CamerasClient::stopLog() {
 
 std::filesystem::path CamerasClient::generateTmpFilePath()
 {
-	return tmpDir / ("tmpImage_" +std::to_string((int)(rand()%1000000)) + ".jpeg");
+	return tmpDir / ("tmpImage_" +std::to_string((int)(rand()%1000000)) + ".jpg");
 }
 
 std::filesystem::path CamerasClient::getFinalFilePath(const std::filesystem::path& outDir, int cameraIndex, int chunk, uint64_t timestamp)
 {
 	// camera_0_chunk_0001_ts_1234567890.jpg
 	return outDir / ("camera_" + std::to_string(cameraIndex) +
-					 "_chunk_" + std::string(chunk ? 3 - (int) log10(chunk) : 3, '0') + std::to_string(chunk) +
-					 "_ts_" + std::to_string(timestamp) + ".jpeg");
+					 // "_chunk_" + std::string(chunk ? 3 - (int) log10(chunk) : 3, '0') + std::to_string(chunk) +
+					 "_ts_" + std::to_string(timestamp) + ".jpg");
 }
 
 } // namespace mandeye
