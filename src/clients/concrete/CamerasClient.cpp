@@ -71,8 +71,8 @@ std::vector<Mat> CamerasClient::readSyncedImages()
 		cap.grab();
 
 	std::vector<Mat> out;
-	Mat tmp;
 	for(auto& cap: caps) {
+		Mat tmp;
 		cap.retrieve(tmp);
 		out.push_back(tmp);
 	}
@@ -128,8 +128,8 @@ void CamerasClient::writeImagesToDiskAndAddToBuffer(const std::vector<StampedIma
 	if(!isLogging.load())
 		return; // recheck (strange things can happen in multithreading)
 
-	ImageInfo tmp;
 	for(int i=0; i< images.size(); i++) {
+		ImageInfo tmp;
 		tmp.path = generateTmpFilePath();
 		tmp.cameraIndex = i;
 		tmp.timestamp = images[i].timestamp;
