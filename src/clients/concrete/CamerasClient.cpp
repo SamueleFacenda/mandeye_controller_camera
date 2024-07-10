@@ -6,7 +6,8 @@
 
 #define CAMERA_WIDTH 1920
 #define CAMERA_HEIGHT 1080
-#define MAX_FPS 2
+#define FPS 2
+#define IMAGE_FORMAT ".jpg"
 
 namespace mandeye {
 
@@ -81,7 +82,7 @@ std::vector<Mat> CamerasClient::readSyncedImages()
 void CamerasClient::receiveImages() {
 	uint64_t currentTimestamp;
 	std::vector<Mat> currentImages;
-	auto delay = std::chrono::nanoseconds((uint64_t) 1e9 / MAX_FPS);
+	auto delay = std::chrono::nanoseconds((uint64_t) 1e9 / FPS);
 
 	while(isRunning.load()) {
 		if (!isLogging.load()) {
@@ -151,7 +152,7 @@ void CamerasClient::stopLog() {
 
 std::filesystem::path CamerasClient::generateTmpFilePath()
 {
-	return tmpDir / ("tmpImage_" +std::to_string((int)(rand()%1000000)) + ".jpg");
+	return tmpDir / ("tmpImage_" +std::to_string((int)(rand()%1000000)) + IMAGE_FORMAT);
 }
 
 std::filesystem::path CamerasClient::getFinalFilePath(const std::filesystem::path& outDir, int cameraIndex, int chunk, uint64_t timestamp)
@@ -159,7 +160,7 @@ std::filesystem::path CamerasClient::getFinalFilePath(const std::filesystem::pat
 	// camera_0_chunk_0001_ts_1234567890.jpg
 	return outDir / ("camera_" + std::to_string(cameraIndex) +
 					 // "_chunk_" + std::string(chunk ? 3 - (int) log10(chunk) : 3, '0') + std::to_string(chunk) +
-					 "_ts_" + std::to_string(timestamp) + ".jpg");
+					 "_ts_" + std::to_string(timestamp) + IMAGE_FORMAT);
 }
 
 } // namespace mandeye
