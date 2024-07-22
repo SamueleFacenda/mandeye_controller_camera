@@ -24,6 +24,7 @@ CamerasClient::CamerasClient(const std::vector<int>& cameraIndexes, const std::s
 		initializeVideoCapture(index);
 	fullBufferLock.lock(); // writeBuffer is empty
 	imagesWriterThread = std::thread(&CamerasClient::writeImages, this);
+	imagesGrabberThread = std::thread(&CamerasClient::readImgesFromCaps, this);
 }
 
 void CamerasClient::initializeVideoCapture(int index) {
@@ -36,6 +37,7 @@ void CamerasClient::initializeVideoCapture(int index) {
 	tmp.set(CAP_PROP_FOURCC, VideoWriter::fourcc('M','J','P','G'));
 	tmp.set(CAP_PROP_FRAME_WIDTH, CAMERA_WIDTH);
 	tmp.set(CAP_PROP_FRAME_HEIGHT, CAMERA_HEIGHT);
+	// tmp.set(CAP_PROP_FPS, 10); // test
 	assert(tmp.get(CAP_PROP_FRAME_WIDTH) == CAMERA_WIDTH); // check if the camera accepted the resolution
 	assert(tmp.get(CAP_PROP_FRAME_HEIGHT) == CAMERA_HEIGHT);
 	caps.push_back(tmp);
@@ -60,54 +62,53 @@ void CamerasClient::saveDumpedChunkToDirectory(const std::filesystem::path& dirN
 
 void CamerasClient::dumpChunkInternally() {
 	std::lock_guard<std::mutex> lock(bufferMutex);
-	dumpBuffer = imagesBuffer;
-	imagesBuffer.clear();
+	dumpBuffer = savedImagesBuffer;
+	savedImagesBuffer.clear();
 }
 
-
-std::vector<Mat> CamerasClient::readSyncedImages()
+std::vector<StampedImage> CamerasClient::readSyncedImages()
 {
+	auto start = std::chrono::high_resolution_clock::now();
 	for(auto& cap: caps)
 		cap.grab();
+	uint64_t timestamp = GetTimeStamp();
 
-	std::vector<Mat> out;
+	std::vector<StampedImage> out;
 	for(auto& cap: caps) {
 		Mat tmp;
 		cap.retrieve(tmp);
-		out.push_back(tmp);
+		out.push_back({tmp, timestamp});
 	}
+	std::cout << "Reading images took " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count() << " ms" << std::endl;
 	return out;
 }
 
 void CamerasClient::receiveImages() {
-	uint64_t currentTimestamp;
-	std::vector<Mat> currentImages;
-	auto delay = std::chrono::nanoseconds((uint64_t) 1e9 / FPS);
+	std::vector<StampedImage> currentImages;
+	auto delay = std::chrono::nanoseconds((uint64_t) (1e9 / FPS));
 
 	while(isRunning.load()) {
+		auto begin = std::chrono::high_resolution_clock::now();
 		if (!isLogging.load()) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 			continue; // do not waste CPU time if we are not logging
 		}
 
-		// check for the timestamp update (when a pointcloud is received)
-		// should happen 10 times per second (I think that the cameras are faster)
-		// When the timestamp is updated I add the latest images to the buffer
-		auto begin = std::chrono::high_resolution_clock::now();
-
-		currentImages = readSyncedImages();
-		currentTimestamp = GetTimeStamp();
+		imagesMutex.lock();
+		currentImages = imagesBuffer;
+		imagesMutex.unlock();
 		// producer thread
 		emptyBufferLock.lock();
 		writeBuffer.clear();
 		for(auto& img: currentImages)
-			writeBuffer.push_back({img, currentTimestamp});
+			writeBuffer.push_back(img);
 		fullBufferLock.unlock();
 		auto end = std::chrono::high_resolution_clock::now();
 		std::this_thread::sleep_for(delay - (end - begin));
 	}
 	for(auto& cap: caps)
 		cap.release();
+	fullBufferLock.unlock(); // let the consumer thread finish
 }
 
 //! This is the consumer thread
@@ -134,25 +135,25 @@ void CamerasClient::writeImagesToDiskAndAddToBuffer(const std::vector<StampedIma
 		tmp.cameraIndex = i;
 		tmp.timestamp = images[i].timestamp;
 		imwrite(tmp.path, images[i].image, {IMWRITE_JPEG_QUALITY, 100});
-		imagesBuffer.push_back(tmp);
+		savedImagesBuffer.push_back(tmp);
 	}
 }
 
 void CamerasClient::startLog() {
 	std::lock_guard<std::mutex> lock(bufferMutex);
-	imagesBuffer.clear();
+	savedImagesBuffer.clear();
 	isLogging.store(true);
 }
 
 void CamerasClient::stopLog() {
 	isLogging.store(false);
 	std::lock_guard<std::mutex> lock(bufferMutex);
-	imagesBuffer.clear();
+	savedImagesBuffer.clear();
 }
 
 std::filesystem::path CamerasClient::generateTmpFilePath()
 {
-	return tmpDir / ("tmpImage_" +std::to_string((int)(rand()%1000000)) + IMAGE_FORMAT);
+	return tmpDir / ("tmpImage_" +std::to_string(tmpImageCounter++) + IMAGE_FORMAT);
 }
 
 std::filesystem::path CamerasClient::getFinalFilePath(const std::filesystem::path& outDir, int cameraIndex, int chunk, uint64_t timestamp)
@@ -161,6 +162,14 @@ std::filesystem::path CamerasClient::getFinalFilePath(const std::filesystem::pat
 	return outDir / ("camera_" + std::to_string(cameraIndex) +
 					 // "_chunk_" + std::string(chunk ? 3 - (int) log10(chunk) : 3, '0') + std::to_string(chunk) +
 					 "_ts_" + std::to_string(timestamp) + IMAGE_FORMAT);
+}
+void CamerasClient::readImgesFromCaps() {
+	while(isRunning.load()) {
+		std::vector<StampedImage> currentImages = readSyncedImages();
+		imagesMutex.lock();
+		imagesBuffer = currentImages;
+		imagesMutex.unlock();
+	}
 }
 
 } // namespace mandeye

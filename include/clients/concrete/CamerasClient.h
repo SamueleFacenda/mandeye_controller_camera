@@ -36,17 +36,21 @@ class CamerasClient : public TimeStampReceiver, public SaveChunkToDirClient, pub
 		std::filesystem::path tmpDir; // on the final media device
 		std::vector<cv::VideoCapture> caps;
 		std::mutex bufferMutex;
-		std::vector<ImageInfo> imagesBuffer;
+		std::mutex imagesMutex;
+		std::vector<StampedImage> imagesBuffer;
+		std::vector<ImageInfo> savedImagesBuffer;
 		std::atomic<bool> isLogging{false};
+		int tmpImageCounter = 0;
 		std::vector<ImageInfo> dumpBuffer; // needed by SaveChunkToDirClient
-		std::thread imagesWriterThread;
+		std::thread imagesWriterThread, imagesGrabberThread;
 		std::vector<StampedImage> writeBuffer;
 		std::mutex emptyBufferLock, fullBufferLock; // there is the imagesWriterThread and the main thread, consuming and producing respectively
 
 		void initializeVideoCapture(int index);
 		void writeImagesToDiskAndAddToBuffer(const std::vector<StampedImage>& images);
 		void writeImages(); // thread
-		std::vector<cv::Mat> readSyncedImages();
+		void readImgesFromCaps(); // Images grabber thread
+		std::vector<StampedImage> readSyncedImages();
 		std::filesystem::path generateTmpFilePath();
 		static std::filesystem::path getFinalFilePath(const std::filesystem::path& outDir, int cameraIndex, int chunk, uint64_t timestamp);
 };
