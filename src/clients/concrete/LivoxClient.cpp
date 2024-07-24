@@ -154,6 +154,15 @@ nlohmann::json LivoxClient::produceStatus()
 	return data;
 }
 
+void LivoxClient::setTimestamp(uint64_t ts, LivoxClient* this_ptr)
+{
+	std::lock_guard<std::mutex> lcK(this_ptr->m_timestampMutex);
+	if (this_ptr->m_timestamp == -1) {
+		this_ptr->systemTimestampDelay = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - ts;
+	}
+	this_ptr->m_timestamp = ts + this_ptr->systemTimestampDelay;
+}
+
 void LivoxClient::startLog()
 {
 	std::lock_guard<std::mutex> lcK1(m_bufferLidarMutex);
@@ -261,14 +270,8 @@ void LivoxClient::PointCloudCallback(uint32_t handle,
 		std::lock_guard<std::mutex> lcK(this_ptr->m_bufferLidarMutex);
 		ToUint64 toUint64;
 		std::memcpy(toUint64.array, data->timestamp, sizeof(uint64_t));
-		{
-			std::lock_guard<std::mutex> lcK(this_ptr->m_timestampMutex);
-			if (this_ptr->m_timestamp == -1) {
-				this_ptr->systemTimestampDelay = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - toUint64.data;
-			}
-			this_ptr->m_timestamp = toUint64.data + this_ptr->systemTimestampDelay;
-			this_ptr->m_handleToLastTimestamp[handle] = toUint64.data + this_ptr->systemTimestampDelay;
-		}
+		setTimestamp(toUint64.data, this_ptr);
+		this_ptr->m_handleToLastTimestamp[handle] = toUint64.data + this_ptr->systemTimestampDelay;
 
 		if(this_ptr->m_bufferLivoxPtr == nullptr)
 		{
@@ -316,10 +319,7 @@ void LivoxClient::ImuDataCallback(uint32_t handle,
 		std::lock_guard<std::mutex> lcK(this_ptr->m_bufferImuMutex);
 		ToUint64 toUint64;
 		std::memcpy(toUint64.array, data->timestamp, sizeof(uint64_t));
-		{
-			std::lock_guard<std::mutex> lcK(this_ptr->m_timestampMutex);
-			this_ptr->m_timestamp = toUint64.data + this_ptr->systemTimestampDelay;
-		}
+		// setTimestamp(toUint64.data, this_ptr); // sync timestamp only with pointclouds
 		if(this_ptr->m_bufferIMUPtr == nullptr)
 		{
 			return;
@@ -328,7 +328,7 @@ void LivoxClient::ImuDataCallback(uint32_t handle,
 		//buffer->resize(buffer->size() + 1);
 		LivoxIMU point;
 		point.point = *p_imu_data;
-		point.timestamp = toUint64.data;
+		point.timestamp = toUint64.data + this_ptr->systemTimestampDelay;
 		point.laser_id = laser_id;
 		if(point.timestamp > 0){
 			buffer->push_back(point);

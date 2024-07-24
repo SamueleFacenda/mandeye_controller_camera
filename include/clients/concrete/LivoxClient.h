@@ -72,6 +72,8 @@ private:
 	std::unordered_map<uint32_t, uint64_t> m_handleToLastTimestamp;
 	std::unordered_map<uint32_t, std::string> m_handleToSerialNumber;
 
+	static void setTimestamp(uint64_t ts, LivoxClient* this_ptr);
+
 
 	//! This is a set of serial numbers that we have already seen, its used to find lidarId
 	std::set<std::string> m_serialNumbers;
