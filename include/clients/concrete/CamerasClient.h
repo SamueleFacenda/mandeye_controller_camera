@@ -26,6 +26,7 @@ struct StampedImage {
 class CamerasClient : public TimeStampReceiver, public SaveChunkToDirClient, public LoggerClient {
 	public:
 		CamerasClient(const std::vector<int>& cameraIndexes, const std::string& savingMediaPath);
+		~CamerasClient();
 		void receiveImages();
 		void saveDumpedChunkToDirectory(const std::filesystem::path& directory, int chunk) override;
 		void dumpChunkInternally() override;

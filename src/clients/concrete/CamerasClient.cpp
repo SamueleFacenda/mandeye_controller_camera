@@ -27,6 +27,13 @@ CamerasClient::CamerasClient(const std::vector<int>& cameraIndexes, const std::s
 	imagesGrabberThread = std::thread(&CamerasClient::readImgesFromCaps, this);
 }
 
+CamerasClient::~CamerasClient() {
+	isRunning.store(false);
+	imagesWriterThread.join();
+	imagesGrabberThread.join();
+}
+
+
 void CamerasClient::initializeVideoCapture(int index) {
 	VideoCapture tmp(index, CAP_V4L2); // on raspberry defaults to gstreamer, buggy
 	if (!tmp.isOpened()) {
