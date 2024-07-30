@@ -156,12 +156,18 @@ nlohmann::json LivoxClient::produceStatus()
 
 void LivoxClient::setTimestamp(uint64_t ts, LivoxClient* this_ptr)
 {
+	setTimestampDelay(ts, this_ptr);
+	std::lock_guard<std::mutex> lcK(this_ptr->m_timestampMutex);
+	this_ptr->m_timestamp = ts + this_ptr->systemTimestampDelay;
+}
+
+void LivoxClient::setTimestampDelay(uint64_t ts, LivoxClient* this_ptr) {
 	std::lock_guard<std::mutex> lcK(this_ptr->m_timestampMutex);
 	if (this_ptr->m_timestamp == -1) {
 		this_ptr->systemTimestampDelay = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - ts;
 	}
-	this_ptr->m_timestamp = ts + this_ptr->systemTimestampDelay;
 }
+
 
 void LivoxClient::startLog()
 {
@@ -319,6 +325,7 @@ void LivoxClient::ImuDataCallback(uint32_t handle,
 		std::lock_guard<std::mutex> lcK(this_ptr->m_bufferImuMutex);
 		ToUint64 toUint64;
 		std::memcpy(toUint64.array, data->timestamp, sizeof(uint64_t));
+		setTimestampDelay(toUint64.data, this_ptr);
 		// setTimestamp(toUint64.data, this_ptr); // sync timestamp only with pointclouds
 		if(this_ptr->m_bufferIMUPtr == nullptr)
 		{
