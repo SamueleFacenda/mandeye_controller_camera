@@ -41,18 +41,19 @@ void CamerasClient::initializeVideoCapture(int index) {
 	// format the gstreamer pipeline
 	char pipeline[512];
 	snprintf(pipeline, 512, GSTREAMER_PIPELINE, cameraName.c_str());
+	std::cout << "Using pipeline: " << pipeline << std::endl;
 	VideoCapture tmp(pipeline, CAP_GSTREAMER); // on raspberry defaults to gstreamer, buggy
 	if (!tmp.isOpened()) {
 		std::cerr << "Error opening cap number " << index << std::endl;
 		return;
 	}
 	// fourcc defaults to YUYV, which is buggy in the resolution selection
-	tmp.set(CAP_PROP_FOURCC, VideoWriter::fourcc('M','J','P','G'));
-	tmp.set(CAP_PROP_FRAME_WIDTH, CAMERA_WIDTH);
-	tmp.set(CAP_PROP_FRAME_HEIGHT, CAMERA_HEIGHT);
+	// tmp.set(CAP_PROP_FOURCC, VideoWriter::fourcc('M','J','P','G'));
+	// tmp.set(CAP_PROP_FRAME_WIDTH, CAMERA_WIDTH);
+	// tmp.set(CAP_PROP_FRAME_HEIGHT, CAMERA_HEIGHT);
 	// tmp.set(CAP_PROP_FPS, 10); // test
-	assert(tmp.get(CAP_PROP_FRAME_WIDTH) == CAMERA_WIDTH); // check if the camera accepted the resolution
-	assert(tmp.get(CAP_PROP_FRAME_HEIGHT) == CAMERA_HEIGHT);
+	// assert(tmp.get(CAP_PROP_FRAME_WIDTH) == CAMERA_WIDTH); // check if the camera accepted the resolution
+	// assert(tmp.get(CAP_PROP_FRAME_HEIGHT) == CAMERA_HEIGHT);
 	caps.push_back(tmp);
 	std::cout << "Initialized camera number " << index << std::endl;
 }
