@@ -8,6 +8,8 @@
 #define CAMERA_HEIGHT 1080
 #define FPS 2
 #define IMAGE_FORMAT ".jpg"
+#define GSTREAMER_PIPELINE "aravissrc camera-name=\"%s\" ! video/x-bayer,format=rggb ! bayer2rgb ! videoconvert ! appsink"
+const std::string CAMERA_NAMES[] = {"Daheng Imaging-2BA200004560-KE0200020137", "Daheng Imaging-2BA200004565-KE0200020142"};
 
 namespace mandeye {
 
@@ -35,7 +37,11 @@ CamerasClient::~CamerasClient() {
 
 
 void CamerasClient::initializeVideoCapture(int index) {
-	VideoCapture tmp(index, CAP_V4L2); // on raspberry defaults to gstreamer, buggy
+	std::string cameraName = CAMERA_NAMES[index];
+	// format the gstreamer pipeline
+	char pipeline[512];
+	snprintf(pipeline, 512, GSTREAMER_PIPELINE, cameraName.c_str());
+	VideoCapture tmp(pipeline, CAP_GSTREAMER); // on raspberry defaults to gstreamer, buggy
 	if (!tmp.isOpened()) {
 		std::cerr << "Error opening cap number " << index << std::endl;
 		return;
