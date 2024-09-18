@@ -75,6 +75,10 @@ void CamerasClient::dumpChunkInternally() {
 
 std::vector<StampedImage> CamerasClient::readSyncedImages()
 {
+	if (caps.size() == 0)
+		// sleep to avoid busy loop
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
 	auto start = std::chrono::high_resolution_clock::now();
 	for(auto& cap: caps)
 		cap.grab();
