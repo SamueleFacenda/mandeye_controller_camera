@@ -8,7 +8,7 @@
 #define CAMERA_HEIGHT 1080
 #define FPS 2
 #define IMAGE_FORMAT ".jpg"
-#define GSTREAMER_PIPELINE "aravissrc camera-name=\"%s\" ! video/x-bayer,format=rggb ! bayer2rgb ! videoconvert ! appsink"
+#define GSTREAMER_PIPELINE "aravissrc exposure=8000 gain-auto=2 camera-name=\"%s\" ! video/x-bayer,format=rggb ! bayer2rgb ! videoconvert ! appsink"
 const std::string CAMERA_NAMES[] = {"Daheng Imaging-2BA200004560-KE0200020137", "Daheng Imaging-2BA200004565-KE0200020142"};
 
 namespace mandeye {
@@ -39,14 +39,15 @@ CamerasClient::~CamerasClient() {
 void CamerasClient::initializeVideoCapture(int index) {
 	std::string cameraName = CAMERA_NAMES[index];
 	// format the gstreamer pipeline
-	char pipeline[512];
-	snprintf(pipeline, 512, GSTREAMER_PIPELINE, cameraName.c_str());
+	char pipeline[256];
+	snprintf(pipeline, 256, GSTREAMER_PIPELINE, cameraName.c_str());
 	std::cout << "Using pipeline: " << pipeline << std::endl;
-	VideoCapture tmp(pipeline, CAP_GSTREAMER); // on raspberry defaults to gstreamer, buggy
+	VideoCapture tmp(pipeline, CAP_GSTREAMER);
 	if (!tmp.isOpened()) {
 		std::cerr << "Error opening cap number " << index << std::endl;
 		return;
 	}
+	tmp.set(CAP_PROP_FPS, 6);
 	// fourcc defaults to YUYV, which is buggy in the resolution selection
 	// tmp.set(CAP_PROP_FOURCC, VideoWriter::fourcc('M','J','P','G'));
 	// tmp.set(CAP_PROP_FRAME_WIDTH, CAMERA_WIDTH);
