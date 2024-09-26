@@ -24,10 +24,8 @@ CamerasClient::CamerasClient(const std::vector<int>& cameraIndexes,
 	for(int index: cameraIndexes)
 		initializeVideoCapture(index);
 	fullBufferLock.lock(); // writeBuffer is empty
-	imagesWriterThread = std::make_shared<std::thread>(&CamerasClient::writeImages, this);
-	imagesGrabberThread = std::make_shared<std::thread>(&CamerasClient::readImagesFromCaps, this);
-	threadsList["Images Writer"] = imagesWriterThread;
-	threadsList["Images Grabber"] = imagesGrabberThread;
+	threadsList["Images Writer"] = std::make_shared<std::thread>(&CamerasClient::writeImages, this);
+	threadsList["Images Grabber"] = std::make_shared<std::thread>(&CamerasClient::readImagesFromCaps, this);
 }
 
 void CamerasClient::initializeVideoCapture(int index) {

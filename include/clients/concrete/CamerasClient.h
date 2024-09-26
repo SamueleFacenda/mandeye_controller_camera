@@ -45,7 +45,6 @@ class CamerasClient : public TimeStampReceiver, public SaveChunkToDirClient, pub
 		std::atomic<bool> isLogging{false};
 		int tmpImageCounter = 0;
 		std::vector<ImageInfo> dumpBuffer; // needed by SaveChunkToDirClient
-		std::shared_ptr<std::thread> imagesWriterThread, imagesGrabberThread;
 		std::vector<StampedImage> writeBuffer;
 		std::mutex emptyBufferLock, fullBufferLock; // there is the imagesWriterThread and the main thread, consuming and producing respectively
 
