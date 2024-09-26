@@ -13,7 +13,8 @@ namespace mandeye {
 
 using namespace cv;
 
-CamerasClient::CamerasClient(const std::vector<int>& cameraIndexes, const std::string& savingMediaPath)
+CamerasClient::CamerasClient(const std::vector<int>& cameraIndexes,
+							 const std::string& savingMediaPath, ThreadMap& threadsList)
 {
 	isLogging.store(false);
 	tmpDir = std::filesystem::path(savingMediaPath) / ".mandeye_cameras_tmp";
@@ -23,16 +24,11 @@ CamerasClient::CamerasClient(const std::vector<int>& cameraIndexes, const std::s
 	for(int index: cameraIndexes)
 		initializeVideoCapture(index);
 	fullBufferLock.lock(); // writeBuffer is empty
-	imagesWriterThread = std::thread(&CamerasClient::writeImages, this);
-	imagesGrabberThread = std::thread(&CamerasClient::readImgesFromCaps, this);
+	imagesWriterThread = std::make_shared<std::thread>(&CamerasClient::writeImages, this);
+	imagesGrabberThread = std::make_shared<std::thread>(&CamerasClient::readImagesFromCaps, this);
+	threadsList["Images Writer"] = imagesWriterThread;
+	threadsList["Images Grabber"] = imagesGrabberThread;
 }
-
-CamerasClient::~CamerasClient() {
-	isRunning.store(false);
-	imagesWriterThread.join();
-	imagesGrabberThread.join();
-}
-
 
 void CamerasClient::initializeVideoCapture(int index) {
 	VideoCapture tmp(index, CAP_V4L2); // on raspberry defaults to gstreamer, buggy
@@ -44,6 +40,7 @@ void CamerasClient::initializeVideoCapture(int index) {
 	tmp.set(CAP_PROP_FOURCC, VideoWriter::fourcc('M','J','P','G'));
 	tmp.set(CAP_PROP_FRAME_WIDTH, CAMERA_WIDTH);
 	tmp.set(CAP_PROP_FRAME_HEIGHT, CAMERA_HEIGHT);
+	tmp.set(CAP_PROP_BUFFERSIZE, 1);
 	// tmp.set(CAP_PROP_FPS, 10); // test
 	assert(tmp.get(CAP_PROP_FRAME_WIDTH) == CAMERA_WIDTH); // check if the camera accepted the resolution
 	assert(tmp.get(CAP_PROP_FRAME_HEIGHT) == CAMERA_HEIGHT);
@@ -90,7 +87,7 @@ std::vector<StampedImage> CamerasClient::readSyncedImages()
 		cap.retrieve(tmp);
 		out.push_back({tmp, timestamp});
 	}
-	std::cout << "Reading images took " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count() << " ms" << std::endl;
+	// std::cout << "Reading images took " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count() << " ms" << std::endl;
 	return out;
 }
 
@@ -174,7 +171,7 @@ std::filesystem::path CamerasClient::getFinalFilePath(const std::filesystem::pat
 					 // "_chunk_" + std::string(chunk ? 3 - (int) log10(chunk) : 3, '0') + std::to_string(chunk) +
 					 "_ts_" + std::to_string(timestamp) + IMAGE_FORMAT);
 }
-void CamerasClient::readImgesFromCaps() {
+void CamerasClient::readImagesFromCaps() {
 	while(isRunning.load()) {
 		std::vector<StampedImage> currentImages = readSyncedImages();
 		imagesMutex.lock();

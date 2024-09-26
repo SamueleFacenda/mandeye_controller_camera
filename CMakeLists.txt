@@ -62,6 +62,7 @@ add_executable(control_program
         src/clients/concrete/LivoxClient.cpp
         src/clients/concrete/GpioClient.cpp
         src/clients/concrete/FileSystemClient.cpp
+        src/clients/concrete/SystemTimeStampProvider.cpp
         src/clients/concrete/CamerasClient.cpp
 )
 

@@ -5,6 +5,7 @@
 #include "clients/LoggerClient.h"
 #include "clients/SaveChunkToDirClient.h"
 #include "clients/TimeStampReceiver.h"
+#include "livox_types.h"
 #include <atomic>
 #include <filesystem>
 #include <opencv2/opencv.hpp>
@@ -25,8 +26,9 @@ struct StampedImage {
 
 class CamerasClient : public TimeStampReceiver, public SaveChunkToDirClient, public LoggerClient {
 	public:
-		CamerasClient(const std::vector<int>& cameraIndexes, const std::string& savingMediaPath);
-		~CamerasClient();
+		CamerasClient(const std::vector<int>& cameraIndexes,
+					  const std::string& savingMediaPath,
+					  ThreadMap& threadsList); // threadsList for joining the threads at shutdown
 		void receiveImages();
 		void saveDumpedChunkToDirectory(const std::filesystem::path& directory, int chunk) override;
 		void dumpChunkInternally() override;
@@ -43,14 +45,14 @@ class CamerasClient : public TimeStampReceiver, public SaveChunkToDirClient, pub
 		std::atomic<bool> isLogging{false};
 		int tmpImageCounter = 0;
 		std::vector<ImageInfo> dumpBuffer; // needed by SaveChunkToDirClient
-		std::thread imagesWriterThread, imagesGrabberThread;
+		std::shared_ptr<std::thread> imagesWriterThread, imagesGrabberThread;
 		std::vector<StampedImage> writeBuffer;
 		std::mutex emptyBufferLock, fullBufferLock; // there is the imagesWriterThread and the main thread, consuming and producing respectively
 
 		void initializeVideoCapture(int index);
 		void writeImagesToDiskAndAddToBuffer(const std::vector<StampedImage>& images);
 		void writeImages(); // thread
-		void readImgesFromCaps(); // Images grabber thread
+		void readImagesFromCaps(); // Images grabber thread
 		std::vector<StampedImage> readSyncedImages();
 		std::filesystem::path generateTmpFilePath();
 		static std::filesystem::path getFinalFilePath(const std::filesystem::path& outDir, int cameraIndex, int chunk, uint64_t timestamp);

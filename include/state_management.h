@@ -44,7 +44,7 @@ const std::map<States, std::string> StatesToString{
 };
 
 extern std::atomic<bool> isRunning;
-extern std::shared_ptr<LivoxClient> livoxClientPtr;
+extern std::shared_ptr<TimeStampProvider> timeStampProviderPtr;
 extern std::shared_ptr<GpioClient> gpioClientPtr;
 extern std::shared_ptr<FileSystemClient> fileSystemClientPtr;
 extern std::vector<std::shared_ptr<SaveChunkToDirClient>> saveableClients;
@@ -52,7 +52,6 @@ extern std::vector<std::shared_ptr<LoggerClient>> loggerClients;
 extern std::vector<std::shared_ptr<JsonStateProducer>> jsonReportProducerClients;
 extern std::shared_mutex clientsMutex; // only used in initialization
 extern std::atomic<int> initializationLatch;
-
 extern States app_state;
 
 std::string produceReport();

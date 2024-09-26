@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 namespace mandeye
 {
 //! Interface for a class that provides a timestamp

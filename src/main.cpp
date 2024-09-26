@@ -2,33 +2,33 @@
 #include "clients/concrete/GnssClient.h"
 #include "clients/concrete/GpioClient.h"
 #include "clients/concrete/LivoxClient.h"
+#include "clients/concrete/SystemTimeStampProvider.h"
+#include "livox_types.h"
 #include "state_management.h"
 #include "utils/utils.h"
 #include "web/ServerHandler.h"
 #include <chrono>
 #include <iostream>
-#include <json.hpp>
 #include <ostream>
 #include <string>
 #include <thread>
 
-//configuration for alienware
 #define MANDEYE_LIVOX_LISTEN_IP "192.168.1.5"
 #define MANDEYE_REPO "/media/usb/"
 #define MANDEYE_GPIO_SIM false
 #define SERVER_PORT 8003
 #define MANDEYE_GNSS_UART "/dev/ttyS0"
 #define DEFAULT_CAMERAS ""
+#define IGNORE_LIDAR_ERROR true
 
 using namespace mandeye;
 
-using threadMap = std::unordered_map<std::string,std::shared_ptr<std::thread>>;
-
-void initializeCameraClientThread(threadMap& threads) {
+void initializeCameraClientThread(ThreadMap& threads) {
 	std::shared_ptr<CamerasClient> camerasClientPtr = std::make_shared<CamerasClient>(
 		utils::getIntListFromEnvVar("MANDEYE_CAMERA_IDS",DEFAULT_CAMERAS),
-		utils::getEnvString("MANDEYE_REPO", MANDEYE_REPO));
-	camerasClientPtr->SetTimeStampProvider(std::dynamic_pointer_cast<TimeStampProvider>(livoxClientPtr));
+		utils::getEnvString("MANDEYE_REPO", MANDEYE_REPO),
+		threads);
+	camerasClientPtr->SetTimeStampProvider(timeStampProviderPtr);
 	threads["Cameras Client"] = std::make_shared<std::thread>([=]() {
 		camerasClientPtr->receiveImages();
 	});
@@ -36,27 +36,33 @@ void initializeCameraClientThread(threadMap& threads) {
 	saveableClients.push_back(camerasClientPtr);
 	loggerClients.push_back(camerasClientPtr);
 
-	initializationLatch--;
 	std::cout << "Cameras Client initialized" << std::endl;
 }
 
-void initializeStateMachineThread(threadMap& threads) {
+void initializeStateMachineThread(ThreadMap& threads) {
 	threads["State Machine"] = std::make_shared<std::thread>([&]() { stateWatcher(); });
 	std::cout << "State Machine initialized" << std::endl;
 }
 
-void initializeLivoxClient(std::atomic<bool>& lidar_error)
+void initializeLivoxClient(bool& lidar_error)
 {
-	livoxClientPtr = std::make_shared<LivoxClient>();
+	std::shared_ptr<LivoxClient> livoxClientPtr = std::make_shared<LivoxClient>();
 	if(!livoxClientPtr->startListener(utils::getEnvString("MANDEYE_LIVOX_LISTEN_IP", MANDEYE_LIVOX_LISTEN_IP))){
-		lidar_error.store(true);
+		lidar_error = true;
+		if (IGNORE_LIDAR_ERROR) {
+			std::cerr << "Ignoring lidar error" << std::endl;
+			lidar_error = false;
+			timeStampProviderPtr = std::make_shared<SystemTimeStampProvider>();
+			return;
+		}
 	}
+
+	timeStampProviderPtr = livoxClientPtr;
 
 	std::unique_lock<std::shared_mutex> lock(clientsMutex);
 	saveableClients.push_back(std::dynamic_pointer_cast<SaveChunkToDirClient>(livoxClientPtr));
 	loggerClients.push_back(std::dynamic_pointer_cast<LoggerClient>(livoxClientPtr));
 	jsonReportProducerClients.push_back(std::dynamic_pointer_cast<JsonStateProducer>(livoxClientPtr));
-	initializationLatch--;
 	std::cout << "Livox initialized" << std::endl;
 }
 
@@ -65,15 +71,14 @@ void initializeGnssClient() {
 	if (!portName.empty()) {
 		std::cout << "Initialize gnss" << std::endl;
 		std::shared_ptr<GNSSClient> gnssClientPtr = std::make_shared<GNSSClient>();
-		gnssClientPtr->SetTimeStampProvider(std::dynamic_pointer_cast<TimeStampProvider>(livoxClientPtr));
+		gnssClientPtr->SetTimeStampProvider(std::dynamic_pointer_cast<TimeStampProvider>(timeStampProviderPtr));
 		gnssClientPtr->startListener(portName, 9600);
 
 		std::unique_lock<std::shared_mutex> lock(clientsMutex);
 		saveableClients.push_back(gnssClientPtr);
 		loggerClients.push_back(gnssClientPtr);
-		jsonReportProducerClients.push_back(livoxClientPtr);
+		jsonReportProducerClients.push_back(gnssClientPtr);
 	}
-	initializationLatch--;
 	std::cout << "GNSS initialized" << std::endl;
 }
 
@@ -84,7 +89,7 @@ void initializeFileSystemClient() {
 	std::cout << "FileSystemClient initialized" << std::endl;
 }
 
-void initializeGpioClientThread(threadMap& threads) {
+void initializeGpioClientThread(ThreadMap& threads) {
 	using namespace std::chrono_literals;
 	threads["Gpio"] = std::make_shared<std::thread>([&]() {
 		const bool simMode = utils::getEnvBool("MANDEYE_GPIO_SIM", MANDEYE_GPIO_SIM);
@@ -106,7 +111,7 @@ void initializeGpioClientThread(threadMap& threads) {
 	});
 }
 
-void initializePistacheServerThread(threadMap& threads, std::shared_ptr<Pistache::Http::Endpoint>& server) {
+void initializePistacheServerThread(ThreadMap& threads, std::shared_ptr<Pistache::Http::Endpoint>& server) {
 	using namespace Pistache;
 
 	Address addr(Ipv4::any(), SERVER_PORT);
@@ -124,8 +129,8 @@ void initializePistacheServerThread(threadMap& threads, std::shared_ptr<Pistache
 int main(int argc, char** argv)
 {
 	std::cout << "program: " << argv[0] << " v0.4" << std::endl;
-	std::atomic<bool> lidar_error = false;
-	threadMap threadsWithNames;
+	bool lidar_error = false;
+	ThreadMap threadsWithNames;
 	std::shared_ptr<Pistache::Http::Endpoint> server;
 
 	initializePistacheServerThread(threadsWithNames, server);
@@ -142,7 +147,7 @@ int main(int argc, char** argv)
 	do {
 		std::this_thread::sleep_for(1000ms);
 
-		if (lidar_error.load()) { // loop guard clause
+		if (lidar_error) { // loop guard clause
 			app_state = States::LIDAR_ERROR;
 			std::cout << "lidar error" << std::endl;
 			std::this_thread::sleep_for(1000ms);

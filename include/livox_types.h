@@ -7,6 +7,7 @@
 #include <deque>
 #include <string>
 #include <set>
+#include <thread>
 
 namespace mandeye
 {
@@ -44,6 +45,7 @@ using LivoxPointsBufferConstPtr = std::shared_ptr<const std::deque<LivoxPoint>>;
 using LivoxIMUBuffer = std::deque<LivoxIMU>;
 using LivoxIMUBufferPtr = std::shared_ptr<std::deque<LivoxIMU>>;
 using LivoxIMUBufferConstPtr = std::shared_ptr<const std::deque<LivoxIMU>>;
+using ThreadMap = std::unordered_map<std::string,std::shared_ptr<std::thread>>;
 
 } // namespace mandeye
 

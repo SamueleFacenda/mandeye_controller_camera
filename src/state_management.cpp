@@ -16,7 +16,7 @@ namespace mandeye
 {
 
 std::atomic<bool> isRunning{true};
-std::shared_ptr<LivoxClient> livoxClientPtr;
+std::shared_ptr<TimeStampProvider> timeStampProviderPtr;
 std::shared_ptr<GpioClient> gpioClientPtr;
 std::shared_ptr<FileSystemClient> fileSystemClientPtr;
 States app_state{States::WAIT_FOR_RESOURCES};
@@ -24,7 +24,7 @@ std::vector<std::shared_ptr<SaveChunkToDirClient>> saveableClients;
 std::vector<std::shared_ptr<LoggerClient>> loggerClients;
 std::vector<std::shared_ptr<JsonStateProducer>> jsonReportProducerClients;
 std::shared_mutex clientsMutex; // only used in initialization
-std::atomic<int> initializationLatch{4}; // there are `n` initialization steps: gpio client, livox client, gnss client, camera client
+std::atomic<int> initializationLatch{1}; // there are `n` initialization steps: just gpio client now
 
 
 std::string produceReport()
