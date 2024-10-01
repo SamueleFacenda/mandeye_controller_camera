@@ -12,6 +12,7 @@
 #include <ostream>
 #include <string>
 #include <thread>
+#include <csignal>
 
 #define MANDEYE_LIVOX_LISTEN_IP "192.168.1.5"
 #define MANDEYE_REPO "/media/usb/"
@@ -19,7 +20,7 @@
 #define SERVER_PORT 8003
 #define MANDEYE_GNSS_UART "/dev/ttyS0"
 #define DEFAULT_CAMERAS ""
-#define IGNORE_LIDAR_ERROR true
+#define IGNORE_LIDAR_ERROR false
 
 using namespace mandeye;
 
@@ -126,12 +127,20 @@ void initializePistacheServerThread(ThreadMap& threads, std::shared_ptr<Pistache
 	});
 }
 
+void stopApplication(int signal) {
+	std::cout << "Stopping application" << std::endl;
+	isRunning.store(false);
+}
+
 int main(int argc, char** argv)
 {
+	std::cin.sync_with_stdio(false);
 	std::cout << "program: " << argv[0] << " v0.4" << std::endl;
 	bool lidar_error = false;
 	ThreadMap threadsWithNames;
 	std::shared_ptr<Pistache::Http::Endpoint> server;
+
+	signal(SIGINT, stopApplication);
 
 	initializePistacheServerThread(threadsWithNames, server);
 	initializeFileSystemClient();
@@ -145,8 +154,6 @@ int main(int argc, char** argv)
 	using namespace std::chrono_literals;
 	char ch = ' ';
 	do {
-		std::this_thread::sleep_for(1000ms);
-
 		if (lidar_error) { // loop guard clause
 			app_state = States::LIDAR_ERROR;
 			std::cout << "lidar error" << std::endl;
@@ -155,7 +162,14 @@ int main(int argc, char** argv)
 		}
 
 		std::cout << "Press q -> quit, s -> start scan , e -> end scan" << std::endl;
+		// check if there is any input, don't do blocking read
+		if (std::cin.rdbuf()->in_avail() == 0) {
+			std::this_thread::sleep_for(500ms);
+			continue;
+		}
+
 		std::cin.get(ch);
+		std::cout << "Received: " << ch << "\n";
 		switch(ch) {
 		case 's':
 			if(StartScan())
@@ -175,9 +189,9 @@ int main(int argc, char** argv)
 		default:
 			std::cerr << "Unknown instruction: '" << ch << "'" << std::endl;
 		}
-	} while (ch != 'q');
+	} while (ch != 'q' && isRunning.load());
 
-	// Stop and join everyone
+	//// Stop and join everyone
 
 	isRunning.store(false); // stop state machine and cameras
 	server->shutdown(); // http server stop

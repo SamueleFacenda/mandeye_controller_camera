@@ -49,7 +49,7 @@ class CamerasClient : public TimeStampReceiver, public SaveChunkToDirClient, pub
 		std::mutex emptyBufferLock, fullBufferLock; // there is the imagesWriterThread and the main thread, consuming and producing respectively
 
 		void initializeVideoCapture(int index);
-		void writeImagesToDiskAndAddToBuffer(const std::vector<StampedImage>& images);
+		void writeImagesToDiskAndAddToSavedImagesBuffer(const std::vector<StampedImage>& images);
 		void writeImages(); // thread
 		void readImagesFromCaps(); // Images grabber thread
 		std::vector<StampedImage> readSyncedImages();

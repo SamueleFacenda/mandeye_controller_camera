@@ -23,7 +23,7 @@ CamerasClient::CamerasClient(const std::vector<int>& cameraIndexes,
 	}
 	for(int index: cameraIndexes)
 		initializeVideoCapture(index);
-	fullBufferLock.lock(); // writeBuffer is empty
+	fullBufferLock.lock(); // false: writeBuffer is empty
 	threadsList["Images Writer"] = std::make_shared<std::thread>(&CamerasClient::writeImages, this);
 	threadsList["Images Grabber"] = std::make_shared<std::thread>(&CamerasClient::readImagesFromCaps, this);
 }
@@ -39,7 +39,7 @@ void CamerasClient::initializeVideoCapture(int index) {
 	tmp.set(CAP_PROP_FRAME_WIDTH, CAMERA_WIDTH);
 	tmp.set(CAP_PROP_FRAME_HEIGHT, CAMERA_HEIGHT);
 	tmp.set(CAP_PROP_BUFFERSIZE, 1);
-	// tmp.set(CAP_PROP_FPS, 10); // test
+	tmp.set(CAP_PROP_FPS, 6);
 	assert(tmp.get(CAP_PROP_FRAME_WIDTH) == CAMERA_WIDTH); // check if the camera accepted the resolution
 	assert(tmp.get(CAP_PROP_FRAME_HEIGHT) == CAMERA_HEIGHT);
 	caps.push_back(tmp);
@@ -103,37 +103,38 @@ void CamerasClient::receiveImages() {
 		imagesMutex.lock();
 		currentImages = imagesBuffer;
 		imagesMutex.unlock();
-		// producer thread
+		// producer thread, wait for the buffer to be empty
 		emptyBufferLock.lock();
 		writeBuffer.clear();
 		for(auto& img: currentImages)
 			writeBuffer.push_back(img);
 		fullBufferLock.unlock();
 		auto end = std::chrono::high_resolution_clock::now();
+		// std::cout << "Sleep for " << std::chrono::duration_cast<std::chrono::milliseconds>(delay - (end - begin)).count() << std::endl;
 		std::this_thread::sleep_for(delay - (end - begin));
 	}
+	fullBufferLock.unlock(); // let the consumer thread finish
 	for(auto& cap: caps)
 		cap.release();
-	fullBufferLock.unlock(); // let the consumer thread finish
 }
 
 //! This is the consumer thread
 void CamerasClient::writeImages() {
+	fullBufferLock.lock(); // wait for the buffer to be full
 	while(isRunning.load()) {
-		fullBufferLock.lock();
 		auto now = std::chrono::high_resolution_clock::now();
-		writeImagesToDiskAndAddToBuffer(writeBuffer);
+		writeImagesToDiskAndAddToSavedImagesBuffer(writeBuffer);
 		std::cout << "Writing images to disk took " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - now).count() << " ms" << std::endl;
 		writeBuffer.clear();
 		emptyBufferLock.unlock();
+		// wait here so we check for quit signal right after
+		fullBufferLock.lock(); // wait for the buffer to be full
 	}
 }
 
-void CamerasClient::writeImagesToDiskAndAddToBuffer(const std::vector<StampedImage>& images)
+void CamerasClient::writeImagesToDiskAndAddToSavedImagesBuffer(const std::vector<StampedImage>& images)
 {
 	std::lock_guard<std::mutex> lock(bufferMutex);
-	if(!isLogging.load())
-		return; // recheck (strange things can happen in multithreading)
 
 	for(int i=0; i< images.size(); i++) {
 		ImageInfo tmp;
@@ -169,6 +170,7 @@ std::filesystem::path CamerasClient::getFinalFilePath(const std::filesystem::pat
 					 // "_chunk_" + std::string(chunk ? 3 - (int) log10(chunk) : 3, '0') + std::to_string(chunk) +
 					 "_ts_" + std::to_string(timestamp) + IMAGE_FORMAT);
 }
+
 void CamerasClient::readImagesFromCaps() {
 	while(isRunning.load()) {
 		std::vector<StampedImage> currentImages = readSyncedImages();
