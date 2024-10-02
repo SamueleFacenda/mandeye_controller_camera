@@ -50,7 +50,7 @@ void initializeLivoxClient(bool& lidar_error)
 	std::shared_ptr<LivoxClient> livoxClientPtr = std::make_shared<LivoxClient>();
 	if(!livoxClientPtr->startListener(utils::getEnvString("MANDEYE_LIVOX_LISTEN_IP", MANDEYE_LIVOX_LISTEN_IP))){
 		lidar_error = true;
-		if (IGNORE_LIDAR_ERROR) {
+		if (utils::getEnvBool("IGNORE_LIDAR_ERROR", IGNORE_LIDAR_ERROR)) {
 			std::cerr << "Ignoring lidar error" << std::endl;
 			lidar_error = false;
 			timeStampProviderPtr = std::make_shared<SystemTimeStampProvider>();
@@ -169,7 +169,6 @@ int main(int argc, char** argv)
 		}
 
 		std::cin.get(ch);
-		std::cout << "Received: " << ch << "\n";
 		switch(ch) {
 		case 's':
 			if(StartScan())
@@ -185,6 +184,8 @@ int main(int argc, char** argv)
 			break;
 		case 'q':
 			std::cout << "Stopping..." << std::endl;
+			break;
+		case '\n':
 			break;
 		default:
 			std::cerr << "Unknown instruction: '" << ch << "'" << std::endl;

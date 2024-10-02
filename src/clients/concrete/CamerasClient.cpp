@@ -5,9 +5,11 @@
 #include <ranges>
 
 #define CAMERA_WIDTH 1920
-#define CAMERA_HEIGHT 1080
-#define FPS 2
+#define CAMERA_HEIGHT 1200
+#define FPS 4
 #define IMAGE_FORMAT ".jpg"
+// 5, 10, 15, 20, 25, 30, 60, 90
+#define IMAGE_CAPTURE_FPS 20
 
 namespace mandeye {
 
@@ -39,7 +41,7 @@ void CamerasClient::initializeVideoCapture(int index) {
 	tmp.set(CAP_PROP_FRAME_WIDTH, CAMERA_WIDTH);
 	tmp.set(CAP_PROP_FRAME_HEIGHT, CAMERA_HEIGHT);
 	tmp.set(CAP_PROP_BUFFERSIZE, 1);
-	tmp.set(CAP_PROP_FPS, 6);
+	tmp.set(CAP_PROP_FPS, IMAGE_CAPTURE_FPS);
 	assert(tmp.get(CAP_PROP_FRAME_WIDTH) == CAMERA_WIDTH); // check if the camera accepted the resolution
 	assert(tmp.get(CAP_PROP_FRAME_HEIGHT) == CAMERA_HEIGHT);
 	caps.push_back(tmp);
@@ -111,6 +113,8 @@ void CamerasClient::receiveImages() {
 		fullBufferLock.unlock();
 		auto end = std::chrono::high_resolution_clock::now();
 		// std::cout << "Sleep for " << std::chrono::duration_cast<std::chrono::milliseconds>(delay - (end - begin)).count() << std::endl;
+		if (delay < end - begin)
+			std::cout << "Warning!! Negative sleep time, we are late (probably too slow writing speed)" << std::endl;
 		std::this_thread::sleep_for(delay - (end - begin));
 	}
 	fullBufferLock.unlock(); // let the consumer thread finish
