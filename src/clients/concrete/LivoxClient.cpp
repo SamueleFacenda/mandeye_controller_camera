@@ -227,6 +227,7 @@ bool LivoxClient::startListener(const std::string& interfaceIp)
 	std::ofstream configFile(configFn);
 	configFile << fillInConfig;
 	configFile.close();
+	DisableLivoxSdkConsoleLogger();
 	init_succes = LivoxLidarSdkInit(configFn);
 	if(!init_succes)
 	{
@@ -447,6 +448,7 @@ void LivoxClient::QueryInternalInfoCallback(livox_status status,
 		off += kv->length;
 	}
 
+	return; //disable annoying logging
 	printf("Host point cloud ip addr:%u.%u.%u.%u, host point cloud port:%u, lidar point cloud "
 		   "port:%u.\n",
 		   host_point_ipaddr[0],

@@ -153,6 +153,7 @@ int main(int argc, char** argv)
 	// Main cycle (cli interface)
 	using namespace std::chrono_literals;
 	char ch = ' ';
+	std::cout << "Press q -> quit, s -> start scan , e -> end scan" << std::endl;
 	do {
 		if (lidar_error) { // loop guard clause
 			app_state = States::LIDAR_ERROR;
@@ -161,10 +162,9 @@ int main(int argc, char** argv)
 			continue; // skip the rest
 		}
 
-		std::cout << "Press q -> quit, s -> start scan , e -> end scan" << std::endl;
 		// check if there is any input, don't do blocking read
 		if (std::cin.rdbuf()->in_avail() == 0) {
-			std::this_thread::sleep_for(500ms);
+			std::this_thread::sleep_for(100ms);
 			continue;
 		}
 
