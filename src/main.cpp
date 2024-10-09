@@ -19,14 +19,12 @@
 #define MANDEYE_GPIO_SIM false
 #define SERVER_PORT 8003
 #define MANDEYE_GNSS_UART "/dev/ttyS0"
-#define DEFAULT_CAMERAS ""
 #define IGNORE_LIDAR_ERROR false
 
 using namespace mandeye;
 
 void initializeCameraClientThread(ThreadMap& threads) {
 	std::shared_ptr<CamerasClient> camerasClientPtr = std::make_shared<CamerasClient>(
-		utils::getIntListFromEnvVar("MANDEYE_CAMERA_IDS",DEFAULT_CAMERAS),
 		utils::getEnvString("MANDEYE_REPO", MANDEYE_REPO),
 		threads);
 	camerasClientPtr->SetTimeStampProvider(timeStampProviderPtr);
@@ -183,6 +181,7 @@ int main(int argc, char** argv)
 			}
 			break;
 		case 'q':
+			isRunning.store(false);
 			std::cout << "Stopping..." << std::endl;
 			break;
 		case '\n':
@@ -190,11 +189,10 @@ int main(int argc, char** argv)
 		default:
 			std::cerr << "Unknown instruction: '" << ch << "'" << std::endl;
 		}
-	} while (ch != 'q' && isRunning.load());
+	} while (isRunning.load());
 
 	//// Stop and join everyone
 
-	isRunning.store(false); // stop state machine and cameras
 	server->shutdown(); // http server stop
 
 	for(const auto& [name, thread]: threadsWithNames) {

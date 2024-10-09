@@ -4,6 +4,7 @@
 #include <execution>
 #include <ranges>
 
+#define MAX_CAMERA_INDEX 10
 #define CAMERA_WIDTH 1920
 #define CAMERA_HEIGHT 1200
 #define FPS 4
@@ -15,16 +16,17 @@ namespace mandeye {
 
 using namespace cv;
 
-CamerasClient::CamerasClient(const std::vector<int>& cameraIndexes,
-							 const std::string& savingMediaPath, ThreadMap& threadsList)
+CamerasClient::CamerasClient(const std::string& savingMediaPath, ThreadMap& threadsList)
 {
 	isLogging.store(false);
 	tmpDir = std::filesystem::path(savingMediaPath) / ".mandeye_cameras_tmp";
-	if (!std::filesystem::is_directory(tmpDir) && !std::filesystem::create_directories(tmpDir)) {
+	if (!std::filesystem::is_directory(tmpDir) && !std::filesystem::create_directories(tmpDir))
 		std::cerr << "Error creating directory '" << tmpDir << "'" << std::endl;
-	}
-	for(int index: cameraIndexes)
-		initializeVideoCapture(index);
+
+	for(int i  = 0; i <= MAX_CAMERA_INDEX; i++)
+		initializeVideoCapture(i);
+	std::cout << caps.size() << " cameras initialized" << std::endl;
+
 	fullBufferLock.lock(); // false: writeBuffer is empty
 	threadsList["Images Writer"] = std::make_shared<std::thread>(&CamerasClient::writeImages, this);
 	threadsList["Images Grabber"] = std::make_shared<std::thread>(&CamerasClient::readImagesFromCaps, this);
@@ -177,10 +179,12 @@ std::filesystem::path CamerasClient::getFinalFilePath(const std::filesystem::pat
 
 void CamerasClient::readImagesFromCaps() {
 	while(isRunning.load()) {
+		auto start = std::chrono::high_resolution_clock::now();
 		std::vector<StampedImage> currentImages = readSyncedImages();
 		imagesMutex.lock();
 		imagesBuffer = currentImages;
 		imagesMutex.unlock();
+		std::cout << "Read images from caps took " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count()  << std::endl;
 	}
 }
 
