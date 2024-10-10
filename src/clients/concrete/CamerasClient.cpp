@@ -10,7 +10,8 @@
 #define FPS 4
 #define IMAGE_FORMAT ".jpg"
 // 5, 10, 15, 20, 25, 30, 60, 90
-#define IMAGE_CAPTURE_FPS 20
+#define IMAGE_CAPTURE_FPS 15
+#define OPENCV_IMAGE_BUFFER_SIZE 4
 
 namespace mandeye {
 
@@ -38,11 +39,11 @@ void CamerasClient::initializeVideoCapture(int index) {
 		std::cerr << "Error opening cap number " << index << std::endl;
 		return;
 	}
-	// fourcc defaults to YUYV, which is buggy in the resolution selection
+	// fourcc defaults to YUYV, it's too slow
 	tmp.set(CAP_PROP_FOURCC, VideoWriter::fourcc('M','J','P','G'));
 	tmp.set(CAP_PROP_FRAME_WIDTH, CAMERA_WIDTH);
 	tmp.set(CAP_PROP_FRAME_HEIGHT, CAMERA_HEIGHT);
-	tmp.set(CAP_PROP_BUFFERSIZE, 1);
+	tmp.set(CAP_PROP_BUFFERSIZE, OPENCV_IMAGE_BUFFER_SIZE);
 	tmp.set(CAP_PROP_FPS, IMAGE_CAPTURE_FPS);
 	assert(tmp.get(CAP_PROP_FRAME_WIDTH) == CAMERA_WIDTH); // check if the camera accepted the resolution
 	assert(tmp.get(CAP_PROP_FRAME_HEIGHT) == CAMERA_HEIGHT);
@@ -184,7 +185,9 @@ void CamerasClient::readImagesFromCaps() {
 		imagesMutex.lock();
 		imagesBuffer = currentImages;
 		imagesMutex.unlock();
-		std::cout << "Read images from caps took " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count()  << std::endl;
+		auto end = std::chrono::high_resolution_clock::now();
+		auto fps = 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		// std::cout << "Reading images took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << std::endl;
 	}
 }
 
