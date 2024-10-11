@@ -64,6 +64,7 @@ add_executable(control_program
         src/clients/concrete/FileSystemClient.cpp
         src/clients/concrete/SystemTimeStampProvider.cpp
         src/clients/concrete/CamerasClient.cpp
+        include/utils/BlockingQueue.h
 )
 
 target_include_directories(control_program

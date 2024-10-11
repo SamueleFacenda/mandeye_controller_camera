@@ -5,6 +5,7 @@
 #include "clients/LoggerClient.h"
 #include "clients/SaveChunkToDirClient.h"
 #include "clients/TimeStampReceiver.h"
+#include "utils/BlockingQueue.h"
 #include "livox_types.h"
 #include <atomic>
 #include <filesystem>
@@ -22,6 +23,7 @@ struct ImageInfo {
 struct StampedImage {
 	cv::Mat image;
 	uint64_t timestamp;
+	int cameraIndex = -1;
 };
 
 class CamerasClient : public TimeStampReceiver, public SaveChunkToDirClient, public LoggerClient {
@@ -43,11 +45,10 @@ class CamerasClient : public TimeStampReceiver, public SaveChunkToDirClient, pub
 		std::atomic<bool> isLogging{false};
 		int tmpImageCounter = 0;
 		std::vector<ImageInfo> dumpBuffer; // needed by SaveChunkToDirClient
-		std::vector<StampedImage> writeBuffer;
-		std::mutex emptyBufferLock, fullBufferLock; // there is the imagesWriterThread and the main thread, consuming and producing respectively
+		utils::BlockingQueue<StampedImage> writeBuffer;
 
 		void initializeVideoCapture(int index);
-		void writeImagesToDiskAndAddToSavedImagesBuffer(const std::vector<StampedImage>& images);
+		ImageInfo preWriteImageToDisk(const StampedImage& img);
 		void writeImages(); // thread
 		void readImagesFromCaps(); // Images grabber thread
 		std::vector<StampedImage> readSyncedImages();

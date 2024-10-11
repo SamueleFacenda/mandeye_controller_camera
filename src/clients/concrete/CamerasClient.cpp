@@ -7,11 +7,13 @@
 #define MAX_CAMERA_INDEX 10
 #define CAMERA_WIDTH 1920
 #define CAMERA_HEIGHT 1200
-#define FPS 4
+#define FPS 5
 #define IMAGE_FORMAT ".jpg"
 // 5, 10, 15, 20, 25, 30, 60, 90
 #define IMAGE_CAPTURE_FPS 15
 #define OPENCV_IMAGE_BUFFER_SIZE 4
+#define MAX_IMAGES_BUFFER_SIZE 16
+#define SAFE_IMAGES_BUFFER_SIZE 8
 
 namespace mandeye {
 
@@ -28,7 +30,6 @@ CamerasClient::CamerasClient(const std::string& savingMediaPath, ThreadMap& thre
 		initializeVideoCapture(i);
 	std::cout << caps.size() << " cameras initialized" << std::endl;
 
-	fullBufferLock.lock(); // false: writeBuffer is empty
 	threadsList["Images Writer"] = std::make_shared<std::thread>(&CamerasClient::writeImages, this);
 	threadsList["Images Grabber"] = std::make_shared<std::thread>(&CamerasClient::readImagesFromCaps, this);
 }
@@ -85,10 +86,10 @@ std::vector<StampedImage> CamerasClient::readSyncedImages()
 	uint64_t timestamp = GetTimeStamp();
 
 	std::vector<StampedImage> out;
-	for(auto& cap: caps) {
+	for(int i = 0; i < caps.size(); i++) {
 		Mat tmp;
-		cap.retrieve(tmp);
-		out.push_back({tmp, timestamp});
+		caps[i].retrieve(tmp);
+		out.push_back({tmp, timestamp, i});
 	}
 	// std::cout << "Reading images took " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count() << " ms" << std::endl;
 	return out;
@@ -108,49 +109,52 @@ void CamerasClient::receiveImages() {
 		imagesMutex.lock();
 		currentImages = imagesBuffer;
 		imagesMutex.unlock();
-		// producer thread, wait for the buffer to be empty
-		emptyBufferLock.lock();
-		writeBuffer.clear();
 		for(auto& img: currentImages)
-			writeBuffer.push_back(img);
-		fullBufferLock.unlock();
+			writeBuffer.push(img);
 		auto end = std::chrono::high_resolution_clock::now();
 		// std::cout << "Sleep for " << std::chrono::duration_cast<std::chrono::milliseconds>(delay - (end - begin)).count() << std::endl;
 		if (delay < end - begin)
 			std::cout << "Warning!! Negative sleep time, we are late (probably too slow writing speed)" << std::endl;
 		std::this_thread::sleep_for(delay - (end - begin));
 	}
-	fullBufferLock.unlock(); // let the consumer thread finish
-	for(auto& cap: caps)
-		cap.release();
+	writeBuffer.stop();
 }
 
 //! This is the consumer thread
 void CamerasClient::writeImages() {
-	fullBufferLock.lock(); // wait for the buffer to be full
+	StampedImage tmp;
+	ImageInfo tmpInfo;
 	while(isRunning.load()) {
+		if (writeBuffer.size() > MAX_IMAGES_BUFFER_SIZE) {
+			writeBuffer.keepN(SAFE_IMAGES_BUFFER_SIZE);
+			std::cout << "Dropping images, buffer is full" << std::endl;
+		}
+
+		tmp = writeBuffer.pop();
+		if (tmp.cameraIndex < 0)
+			continue;
+
 		auto now = std::chrono::high_resolution_clock::now();
-		writeImagesToDiskAndAddToSavedImagesBuffer(writeBuffer);
-		std::cout << "Writing images to disk took " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - now).count() << " ms" << std::endl;
-		writeBuffer.clear();
-		emptyBufferLock.unlock();
-		// wait here so we check for quit signal right after
-		fullBufferLock.lock(); // wait for the buffer to be full
+		tmpInfo = preWriteImageToDisk(tmp);
+		{
+			std::lock_guard<std::mutex> lock(bufferMutex);
+			savedImagesBuffer.push_back(tmpInfo);
+		}
+		std::cout << "Writing image to disk took " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - now).count() << " ms" << std::endl;
 	}
 }
 
-void CamerasClient::writeImagesToDiskAndAddToSavedImagesBuffer(const std::vector<StampedImage>& images)
+ImageInfo CamerasClient::preWriteImageToDisk(const StampedImage& img)
 {
 	std::lock_guard<std::mutex> lock(bufferMutex);
 
-	for(int i=0; i< images.size(); i++) {
-		ImageInfo tmp;
-		tmp.path = generateTmpFilePath();
-		tmp.cameraIndex = i;
-		tmp.timestamp = images[i].timestamp;
-		imwrite(tmp.path, images[i].image, {IMWRITE_JPEG_QUALITY, 100});
-		savedImagesBuffer.push_back(tmp);
-	}
+	ImageInfo tmp{
+		.path = generateTmpFilePath(),
+		.timestamp = img.timestamp,
+		.cameraIndex = img.cameraIndex
+	};
+	imwrite(tmp.path, img.image, {IMWRITE_JPEG_QUALITY, 100});
+	return tmp;
 }
 
 void CamerasClient::startLog() {
@@ -181,14 +185,20 @@ std::filesystem::path CamerasClient::getFinalFilePath(const std::filesystem::pat
 void CamerasClient::readImagesFromCaps() {
 	while(isRunning.load()) {
 		auto start = std::chrono::high_resolution_clock::now();
+
 		std::vector<StampedImage> currentImages = readSyncedImages();
 		imagesMutex.lock();
 		imagesBuffer = currentImages;
 		imagesMutex.unlock();
+
 		auto end = std::chrono::high_resolution_clock::now();
-		auto fps = 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-		// std::cout << "Reading images took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << std::endl;
+		auto fps = 1000.0 / std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		int millis = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		if (millis > 100)
+			std::cout << "Warning!! Reading images took " << millis << " ms" << std::endl;
 	}
+	for(auto& cap: caps)
+		cap.release();
 }
 
 } // namespace mandeye
