@@ -169,13 +169,13 @@ void stateWatcher()
 
 			break;
 		case States::IDLE:
-			gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_STOP_SCAN, false);
+			// gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_STOP_SCAN, false);
 			gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, false);
 			std::this_thread::sleep_for(100ms);
 
 			break;
 		case States::STARTING_SCAN:
-			gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_STOP_SCAN, false);
+			// gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_STOP_SCAN, false);
 			utils::blinkLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, 100ms);
 			utils::blinkLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, 100ms);
 

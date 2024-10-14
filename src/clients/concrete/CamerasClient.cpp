@@ -143,7 +143,10 @@ void CamerasClient::writeImages() {
 			std::lock_guard<std::mutex> lock(bufferMutex);
 			savedImagesBuffer.push_back(tmpInfo);
 		}
-		std::cout << "Writing image to disk took " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - now).count() << " ms" << std::endl;
+		auto end = std::chrono::high_resolution_clock::now();
+		double fps = 1.0 / std::chrono::duration<double>(end - now).count();
+		if (fps / 2 < FPS)
+			std::cout << "Writing image to disk took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - now).count() << " ms" << std::endl;
 	}
 }
 
@@ -186,7 +189,11 @@ std::filesystem::path CamerasClient::getFinalFilePath(const std::filesystem::pat
 }
 
 void CamerasClient::readImagesFromCaps() {
+	bool isLedOn = false;
 	while(isRunning.load()) {
+		// use unused LED to signal that we are reading images
+		gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_STOP_SCAN, isLedOn);
+		isLedOn = !isLedOn;
 		auto start = std::chrono::high_resolution_clock::now();
 
 		std::vector<StampedImage> currentImages = readSyncedImages();
