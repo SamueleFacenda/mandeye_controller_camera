@@ -62,7 +62,7 @@ void CamerasClient::saveDumpedChunkToDirectory(const std::filesystem::path& dirN
 		return;
 	}
 	for(auto& img: dumpBuffer) {
-		std::filesystem::path finalPath = getFinalFilePath(outDir, img.cameraIndex, chunkNumber, img.timestamp);
+		std::filesystem::path finalPath = getFinalFilePath(outDir, img.cameraIndex, img.timestamp);
 		std::filesystem::rename(img.path, finalPath);
 	}
 	dumpBuffer.clear();
@@ -76,7 +76,7 @@ void CamerasClient::dumpChunkInternally() {
 
 std::vector<StampedImage> CamerasClient::readSyncedImages()
 {
-	if (caps.size() == 0)
+	if (caps.empty())
 		// sleep to avoid busy loop
 		std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
@@ -87,9 +87,12 @@ std::vector<StampedImage> CamerasClient::readSyncedImages()
 
 	std::vector<StampedImage> out;
 	for(int i = 0; i < caps.size(); i++) {
-		Mat tmp;
-		caps[i].retrieve(tmp);
-		out.push_back({tmp, timestamp, i});
+		StampedImage tmp = {
+			.timestamp = timestamp,
+			.cameraIndex = i
+		};
+		caps[i].retrieve(tmp.image);
+		out.push_back(tmp);
 	}
 	// std::cout << "Reading images took " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count() << " ms" << std::endl;
 	return out;
@@ -174,7 +177,7 @@ std::filesystem::path CamerasClient::generateTmpFilePath()
 	return tmpDir / ("tmpImage_" +std::to_string(tmpImageCounter++) + IMAGE_FORMAT);
 }
 
-std::filesystem::path CamerasClient::getFinalFilePath(const std::filesystem::path& outDir, int cameraIndex, int chunk, uint64_t timestamp)
+std::filesystem::path CamerasClient::getFinalFilePath(const std::filesystem::path& outDir, int cameraIndex, uint64_t timestamp)
 {
 	// camera_0_chunk_0001_ts_1234567890.jpg
 	return outDir / ("camera_" + std::to_string(cameraIndex) +
@@ -192,9 +195,9 @@ void CamerasClient::readImagesFromCaps() {
 		imagesMutex.unlock();
 
 		auto end = std::chrono::high_resolution_clock::now();
-		auto fps = 1000.0 / std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-		int millis = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-		if (millis > 100)
+		auto fps = 1.0 / std::chrono::duration<double>(end - start).count();
+		long millis = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		if (fps < FPS)
 			std::cout << "Warning!! Reading images took " << millis << " ms" << std::endl;
 	}
 	for(auto& cap: caps)

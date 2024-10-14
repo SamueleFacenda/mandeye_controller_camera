@@ -53,7 +53,7 @@ class CamerasClient : public TimeStampReceiver, public SaveChunkToDirClient, pub
 		void readImagesFromCaps(); // Images grabber thread
 		std::vector<StampedImage> readSyncedImages();
 		std::filesystem::path generateTmpFilePath();
-		static std::filesystem::path getFinalFilePath(const std::filesystem::path& outDir, int cameraIndex, int chunk, uint64_t timestamp);
+		static std::filesystem::path getFinalFilePath(const std::filesystem::path& outDir, int cameraIndex, uint64_t timestamp);
 };
 
 } // namespace mandeye
