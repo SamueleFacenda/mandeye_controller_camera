@@ -95,13 +95,13 @@ void initializeGpioClientThread(ThreadMap& threads) {
 		gpioClientPtr = std::make_shared<GpioClient>(simMode);
 		for(int i = 0; i < 3; i++)
 		{
-			utils::blinkLed(GpioClient::LED::LED_GPIO_STOP_SCAN, 100ms);
-			utils::blinkLed(GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, 100ms);
-			utils::blinkLed(GpioClient::LED::LED_GPIO_COPY_DATA, 100ms);
+			utils::blinkLed(LED::LED_GPIO_STOP_SCAN, 100ms);
+			utils::blinkLed(LED::LED_GPIO_CONTINOUS_SCANNING, 100ms);
+			utils::blinkLed(LED::LED_GPIO_COPY_DATA, 100ms);
 		}
 		std::cout << "GPIO Init done" << std::endl;
-		gpioClientPtr->addButtonCallback(GpioClient::BUTTON::BUTTON_STOP_SCAN, "BUTTON_STOP_SCAN", [&]() { TriggerStopScan(); });
-		gpioClientPtr->addButtonCallback(GpioClient::BUTTON::BUTTON_CONTINOUS_SCANNING, "BUTTON_CONTINOUS_SCANNING", [&]() { TriggerContinousScanning(); });
+		gpioClientPtr->addButtonCallback(BUTTON::BUTTON_STOP_SCAN, "BUTTON_STOP_SCAN", [&]() { TriggerStopScan(); });
+		gpioClientPtr->addButtonCallback(BUTTON::BUTTON_CONTINOUS_SCANNING, "BUTTON_CONTINOUS_SCANNING", [&]() { TriggerContinousScanning(); });
 
 		std::unique_lock<std::shared_mutex> lock(clientsMutex);
 		jsonReportProducerClients.push_back(gpioClientPtr);

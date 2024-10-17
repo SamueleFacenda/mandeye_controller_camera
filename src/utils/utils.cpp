@@ -27,7 +27,7 @@ bool getEnvBool(const std::string& env, bool def)
 	return false;
 }
 
-void blinkLed(mandeye::GpioClient::LED led, std::chrono::milliseconds mills) {
+void blinkLed(mandeye::LED led, std::chrono::milliseconds mills) {
 	mandeye::gpioClientPtr->setLed(led, true);
 	std::this_thread::sleep_for(mills);
 	mandeye::gpioClientPtr->setLed(led, false);

@@ -192,7 +192,7 @@ void CamerasClient::readImagesFromCaps() {
 	bool isLedOn = false;
 	while(isRunning.load()) {
 		// use unused LED to signal that we are reading images
-		gpioClientPtr->setLed(GpioClient::LED::LED_GPIO_STOP_SCAN, isLedOn);
+		gpioClientPtr->setLed(LED::LED_GPIO_STOP_SCAN, isLedOn);
 		isLedOn = !isLedOn;
 		auto start = std::chrono::high_resolution_clock::now();
 

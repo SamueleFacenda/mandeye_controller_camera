@@ -3,28 +3,24 @@
 #include <json.hpp>
 #include <mutex>
 #include <unordered_map>
-#include <pigpiod_if2.h>
+#include <pigpio.h>
 
 namespace mandeye
 {
 
+enum class LED {
+	LED_GPIO_STOP_SCAN = 26,
+	LED_GPIO_COPY_DATA = 19,
+	LED_GPIO_CONTINOUS_SCANNING = 13
+};
+
+enum class BUTTON {
+	BUTTON_STOP_SCAN = 5,
+	BUTTON_CONTINOUS_SCANNING = 6
+};
 
 class GpioClient : public JsonStateProducer
 {
-public:
-	enum class LED
-	{
-		LED_GPIO_STOP_SCAN,
-		LED_GPIO_COPY_DATA,
-		LED_GPIO_CONTINOUS_SCANNING
-	};
-
-	enum class BUTTON
-	{
-		BUTTON_STOP_SCAN,
-		BUTTON_CONTINOUS_SCANNING
-	};
-
 public:
 	//! Constructor
 	//! @param sim if true hardware is not called
@@ -52,16 +48,23 @@ private:
 		{LED::LED_GPIO_STOP_SCAN, false},
 		{LED::LED_GPIO_COPY_DATA, false},
 		{LED::LED_GPIO_CONTINOUS_SCANNING, false},
-		
 	};
 
-	//! available LEDs
-	std::unordered_map<GpioClient::LED, std::unique_ptr<GPIO::DigitalOut>> m_ledGpio;
+	std::unordered_map<BUTTON, bool> m_buttonState{
+		{BUTTON::BUTTON_STOP_SCAN, false},
+		{BUTTON::BUTTON_CONTINOUS_SCANNING, false},
+	};
 
-	//! available Buttons
-	std::unordered_map<GpioClient::BUTTON, std::unique_ptr<GPIO::PushButton>> m_buttons;
+	std::unordered_map<BUTTON, uint32_t> m_buttonLastPressTime{
+		{BUTTON::BUTTON_STOP_SCAN, 0},
+		{BUTTON::BUTTON_CONTINOUS_SCANNING, 0},
+	};
 
-	std::unordered_map<GpioClient::BUTTON, Callbacks> m_buttonsCallbacks;
+	std::unordered_map<BUTTON, Callbacks> m_buttonsCallbacks;
+
+	static void btnCallback(int gpio, int level, uint32_t tick, void* userdata);
+	void initLed(LED led);
+	void initButton(BUTTON btn);
 
 	//! useful translations
 	const std::unordered_map<LED, std::string> LedToName{

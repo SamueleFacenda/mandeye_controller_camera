@@ -1,7 +1,7 @@
 #include "clients/concrete/GpioClient.h"
-#include "cppgpio.hpp"
-#include "cppgpio/output.hpp"
 #include <iostream>
+
+#define DEBOUNCE_TIME 10000
 
 namespace mandeye
 {
@@ -10,7 +10,6 @@ GpioClient::GpioClient(bool sim)
 	: m_useSimulatedGPIO(sim)
 {
 
-	using namespace GPIO;
 	for(auto& [id, name] : ButtonToName)
 	{
 		m_buttonsCallbacks[id] = Callbacks{};
@@ -18,25 +17,18 @@ GpioClient::GpioClient(bool sim)
 
 	if(!sim)
 	{
-		std::lock_guard<std::mutex> lck{m_lock};
-		m_ledGpio[LED::LED_GPIO_STOP_SCAN] = std::make_unique<DigitalOut>(26);
-		m_ledGpio[LED::LED_GPIO_COPY_DATA] = std::make_unique<DigitalOut>(19);
-		m_ledGpio[LED::LED_GPIO_CONTINOUS_SCANNING] = std::make_unique<DigitalOut>(13);
-			
-		m_buttons[BUTTON::BUTTON_STOP_SCAN] = std::make_unique<PushButton>(5, GPIO::GPIO_PULL::UP);
-		m_buttons[BUTTON::BUTTON_CONTINOUS_SCANNING] = std::make_unique<PushButton>(6, GPIO::GPIO_PULL::UP);
-
-		for(auto& [buttonID, ptr] : m_buttons)
-		{
-			ptr->start();
-			ptr->f_pushed = [&]() {
-				auto& it = m_buttonsCallbacks[buttonID];
-				for(auto& [name, callback] : it)
-				{
-					callback();
-				}
-			};
+		if (gpioInitialise() == PI_INIT_FAILED) {
+			std::cout << "ERROR: Failed to initialize the GPIO interface." << std::endl;
+			return;
 		}
+
+		std::lock_guard<std::mutex> lck{m_lock};
+
+		for(auto& [led, state] : m_ledState)
+			initLed(led);
+
+		for(auto& [button, state] : m_buttonState)
+			initButton(button);
 	}
 
 	for(auto& [buttonID, ButtonName] : ButtonToName)
@@ -69,7 +61,7 @@ nlohmann::json GpioClient::produceStatus()
 	{
 		try
 		{
-			data["buttons"][buttonname] = m_buttons.at(buttonid)->is_on();
+			data["buttons"][buttonname] = m_buttonState.at(buttonid);
 		}
 		catch(const std::out_of_range& ex)
 		{
@@ -84,24 +76,16 @@ void GpioClient::setLed(LED led, bool state)
 	std::lock_guard<std::mutex> lck{m_lock};
 	m_ledState[led] = state;
 	if(!m_useSimulatedGPIO)
-	{
-		if(state)
-		{
-			m_ledGpio[led]->on();
-		}
-		else
-		{
-			m_ledGpio[led]->off();
-		}
-	}
+		gpioWrite((int) led, state);
 }
 
-void GpioClient::addButtonCallback(GpioClient::BUTTON btn,
+void GpioClient::addButtonCallback(BUTTON btn,
 								   const std::string& callbackName,
 								   const std::function<void()>& callback)
 {
 	std::lock_guard<std::mutex> lck{m_lock};
-	std::unordered_map<GpioClient::BUTTON, Callbacks>::iterator it = m_buttonsCallbacks.find(btn);
+	// check if button exists (do I really need this? It's not checked anywhere else)
+	auto it = m_buttonsCallbacks.find(btn);
 	if(it == m_buttonsCallbacks.end())
 	{
 		std::cerr << "No button with id " << (int)btn << std::endl;
@@ -113,6 +97,34 @@ void GpioClient::addButtonCallback(GpioClient::BUTTON btn,
 std::string GpioClient::getJsonName()
 {
 	return "gpio";
+}
+
+void GpioClient::initLed(LED led) {
+	gpioSetMode((int) led, PI_OUTPUT);
+	gpioWrite((int) led, PI_LOW);
+	m_ledState[led] = false;
+}
+
+void GpioClient::btnCallback(int gpio, int level, uint32_t tick, void* userdata) {
+	auto* thiss = (GpioClient*) userdata;
+	auto btn = (BUTTON) gpio;
+	if (tick - thiss->m_buttonLastPressTime[btn] < DEBOUNCE_TIME)
+		return;
+
+	thiss->m_buttonLastPressTime[btn] = tick;
+	thiss->m_buttonState[btn] = level == PI_LOW;
+	if (thiss->m_buttonState[btn])
+	{
+		for(auto& [name, callback] : thiss->m_buttonsCallbacks[btn])
+			callback();
+	}
+}
+
+void GpioClient::initButton(BUTTON btn) {
+	gpioSetMode((int) btn, PI_INPUT);
+	gpioSetPullUpDown((int) btn, PI_PUD_UP);
+	gpioSetAlertFuncEx((int) btn, btnCallback, this);
+	m_buttonState[btn] = false;
 }
 
 } // namespace mandeye

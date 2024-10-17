@@ -13,23 +13,23 @@ int main(int arc, char *argv[]){
     {
         std::cout << "iteration " << i + 1  << " of 10" << std::endl;
         std::cout << "LED_GPIO_STOP_SCAN ON" << std::endl;
-        gpioClientPtr->setLed(mandeye::GpioClient::LED::LED_GPIO_STOP_SCAN, true);
+        gpioClientPtr->setLed(mandeye::LED::LED_GPIO_STOP_SCAN, true);
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         std::cout << "LED_GPIO_COPY_DATA ON" << std::endl;
-        gpioClientPtr->setLed(mandeye::GpioClient::LED::LED_GPIO_COPY_DATA, true);
+        gpioClientPtr->setLed(mandeye::LED::LED_GPIO_COPY_DATA, true);
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         std::cout << "LED_GPIO_CONTINOUS_SCANNING ON" << std::endl;
-        gpioClientPtr->setLed(mandeye::GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, true);
+        gpioClientPtr->setLed(mandeye::LED::LED_GPIO_CONTINOUS_SCANNING, true);
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
        
         std::cout << "LED_GPIO_STOP_SCAN OFF" << std::endl;
-        gpioClientPtr->setLed(mandeye::GpioClient::LED::LED_GPIO_STOP_SCAN, false);
+        gpioClientPtr->setLed(mandeye::LED::LED_GPIO_STOP_SCAN, false);
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         std::cout << "LED_GPIO_COPY_DATA OFF" << std::endl;
-        gpioClientPtr->setLed(mandeye::GpioClient::LED::LED_GPIO_COPY_DATA, false);
+        gpioClientPtr->setLed(mandeye::LED::LED_GPIO_COPY_DATA, false);
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         std::cout << "LED_GPIO_CONTINOUS_SCANNING OFF" << std::endl;
-        gpioClientPtr->setLed(mandeye::GpioClient::LED::LED_GPIO_CONTINOUS_SCANNING, false);
+        gpioClientPtr->setLed(mandeye::LED::LED_GPIO_CONTINOUS_SCANNING, false);
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
     
