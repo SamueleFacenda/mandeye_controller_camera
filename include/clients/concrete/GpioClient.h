@@ -25,6 +25,7 @@ public:
 	//! Constructor
 	//! @param sim if true hardware is not called
 	GpioClient(bool sim);
+	~GpioClient();
 
 	//! serialize component state to API
 	nlohmann::json produceStatus() override;

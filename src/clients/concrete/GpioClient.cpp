@@ -11,12 +11,9 @@ GpioClient::GpioClient(bool sim)
 {
 
 	for(auto& [id, name] : ButtonToName)
-	{
 		m_buttonsCallbacks[id] = Callbacks{};
-	}
 
-	if(!sim)
-	{
+	if(!sim) {
 		if (gpioInitialise() == PI_INIT_FAILED) {
 			std::cout << "ERROR: Failed to initialize the GPIO interface." << std::endl;
 			return;
@@ -32,14 +29,16 @@ GpioClient::GpioClient(bool sim)
 	}
 
 	for(auto& [buttonID, ButtonName] : ButtonToName)
-	{
-		{
-			addButtonCallback(buttonID, "DBG" + ButtonName, [&]() {
-				std::cout << "TestButton " << ButtonName << std::endl;
-			});
-		}
-	};
+		addButtonCallback(buttonID, "DBG" + ButtonName, [&]() {
+			std::cout << "TestButton " << ButtonName << std::endl;
+		});
 }
+
+GpioClient::~GpioClient() {
+	if(!m_useSimulatedGPIO)
+		gpioTerminate();
+}
+
 
 nlohmann::json GpioClient::produceStatus()
 {
