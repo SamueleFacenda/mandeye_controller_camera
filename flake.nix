@@ -27,6 +27,7 @@
               libserial
               rapidjson
               opencv
+              pigpio
               tbb
             ];
             cmakeFlags = [
@@ -56,6 +57,20 @@
               "-DLIBSERIAL_PYTHON_ENABLE=OFF"
             ];
           };
+          pigpio = pkgs.stdenv.mkDerivation rec {
+            pname = "pigpio";
+            version = "79";
+            src = pkgs.fetchFromGitHub {
+              repo = "pigpio";
+              owner = "joan2937";
+              rev = "v${version}";
+              sha256 = "Z+SwUlBbtWtnbjTe0IghR3gIKS43ZziN0amYtmXy7HE=";
+            };
+            nativeBuildInputs = with pkgs; [
+              cmake
+            ];
+            
+          };
         };
 
         # apps = {
@@ -73,6 +88,7 @@
             buildInputs = with pkgs; [
               self.packages.${system}.libserial
               rapidjson
+              self.packages.${system}.pigpio
               opencv
               tbb
             ];

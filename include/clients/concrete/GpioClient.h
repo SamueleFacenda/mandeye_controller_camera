@@ -1,14 +1,13 @@
 #pragma once
 #include "clients/JsonStateProducer.h"
-#include "cppgpio/buttons.hpp"
-#include "cppgpio/output.hpp"
 #include <json.hpp>
 #include <mutex>
 #include <unordered_map>
+#include <pigpiod_if2.h>
+
 namespace mandeye
 {
 
-// forward declaration of cppgpio type that I want to keep inside compliation unit
 
 class GpioClient : public JsonStateProducer
 {

@@ -51,6 +51,14 @@ pkg_check_modules(TBB REQUIRED tbb)
 
 find_package(OpenCV REQUIRED)
 
+# pigpio
+find_package(pigpio QUIET)
+if(NOT pigpio_FOUND)
+    include(3rd/Findpigpio.cmake)
+endif()
+
+include_directories(${pigpio_INCLUDE_DIR})
+
 #executable
 add_executable(control_program
         src/main.cpp
@@ -64,7 +72,6 @@ add_executable(control_program
         src/clients/concrete/FileSystemClient.cpp
         src/clients/concrete/SystemTimeStampProvider.cpp
         src/clients/concrete/CamerasClient.cpp
-        include/utils/BlockingQueue.h
 )
 
 target_include_directories(control_program
@@ -73,14 +80,14 @@ target_include_directories(control_program
 
 set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -latomic")
 message("${TBB_LIBRARIES}")
-target_link_libraries(control_program livox_lidar_sdk_static cppgpio-static pistache atomic laszip ${LIBSERIAL_LIBRARY} minea ${OpenCV_LIBS} ${TBB_LIBRARIES})
+target_link_libraries(control_program livox_lidar_sdk_static cppgpio-static pistache atomic laszip ${LIBSERIAL_LIBRARY} minea ${OpenCV_LIBS} ${TBB_LIBRARIES} ${pigpio_LIBRARY})
 
 add_executable(led_demo src/demos/led_demo.cpp src/clients/concrete/GpioClient.cpp)
 target_include_directories(led_demo PRIVATE include)
 set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS}")
-target_link_libraries(led_demo cppgpio-static)
+target_link_libraries(led_demo cppgpio-static ${pigpio_LIBRARY})
 
 add_executable(button_demo src/demos/button_demo.cpp src/clients/concrete/GpioClient.cpp)
 target_include_directories(button_demo PRIVATE include)
 set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS}")
-target_link_libraries(button_demo cppgpio-static)
+target_link_libraries(button_demo cppgpio-static ${pigpio_LIBRARY})

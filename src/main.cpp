@@ -13,7 +13,6 @@
 #include <string>
 #include <thread>
 #include <csignal>
-
 #define MANDEYE_LIVOX_LISTEN_IP "192.168.1.5"
 #define MANDEYE_REPO "/media/usb/"
 #define MANDEYE_GPIO_SIM false
