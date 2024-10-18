@@ -134,7 +134,7 @@ void CamerasClient::writeImages() {
 		}
 
 		tmp = writeBuffer.pop();
-		if (tmp.cameraIndex < 0)
+		if (tmp.cameraIndex < 0) // empty image
 			continue;
 
 		auto now = std::chrono::high_resolution_clock::now();
@@ -145,15 +145,13 @@ void CamerasClient::writeImages() {
 		}
 		auto end = std::chrono::high_resolution_clock::now();
 		double fps = 1.0 / std::chrono::duration<double>(end - now).count();
-		if (fps / 2 < FPS)
-			std::cout << "Writing image to disk took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - now).count() << " ms" << std::endl;
+		if (fps / caps.size() < FPS)
+			std::cout << "Warning!! Writing image to disk took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - now).count() << " ms" << std::endl;
 	}
 }
 
 ImageInfo CamerasClient::preWriteImageToDisk(const StampedImage& img)
 {
-	std::lock_guard<std::mutex> lock(bufferMutex);
-
 	ImageInfo tmp{
 		.path = generateTmpFilePath(),
 		.timestamp = img.timestamp,
@@ -204,7 +202,7 @@ void CamerasClient::readImagesFromCaps() {
 		auto end = std::chrono::high_resolution_clock::now();
 		auto fps = 1.0 / std::chrono::duration<double>(end - start).count();
 		long millis = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-		std::cout << "Reading images at " << fps << " fps" << std::endl;
+		// std::cout << "Reading images at " << fps << " fps" << std::endl;
 		if (fps < FPS)
 			std::cout << "Warning!! Reading images took " << millis << " ms" << std::endl;
 	}
