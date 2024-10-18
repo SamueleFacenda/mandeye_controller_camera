@@ -204,6 +204,7 @@ void CamerasClient::readImagesFromCaps() {
 		auto end = std::chrono::high_resolution_clock::now();
 		auto fps = 1.0 / std::chrono::duration<double>(end - start).count();
 		long millis = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		std::cout << "Reading images at " << fps << " fps" << std::endl;
 		if (fps < FPS)
 			std::cout << "Warning!! Reading images took " << millis << " ms" << std::endl;
 	}

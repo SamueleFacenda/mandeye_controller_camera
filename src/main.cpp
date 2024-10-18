@@ -89,10 +89,15 @@ void initializeFileSystemClient() {
 
 void initializeGpioClientThread(ThreadMap& threads) {
 	using namespace std::chrono_literals;
+	const bool simMode = utils::getEnvBool("MANDEYE_GPIO_SIM", MANDEYE_GPIO_SIM);
+	std::cout << "MANDEYE_GPIO_SIM : " << simMode << std::endl;
+	gpioClientPtr = std::make_shared<GpioClient>(simMode);
+
+	gpioClientPtr->addButtonCallback(BUTTON::BUTTON_STOP_SCAN, "BUTTON_STOP_SCAN", [&]() { TriggerStopScan(); });
+	gpioClientPtr->addButtonCallback(BUTTON::BUTTON_CONTINOUS_SCANNING, "BUTTON_CONTINOUS_SCANNING", [&]() { TriggerContinousScanning(); });
+
+	// LED dance signalizing that GPIO is ready
 	threads["Gpio"] = std::make_shared<std::thread>([&]() {
-		const bool simMode = utils::getEnvBool("MANDEYE_GPIO_SIM", MANDEYE_GPIO_SIM);
-		std::cout << "MANDEYE_GPIO_SIM : " << simMode << std::endl;
-		gpioClientPtr = std::make_shared<GpioClient>(simMode);
 		for(int i = 0; i < 3; i++)
 		{
 			utils::blinkLed(LED::LED_GPIO_STOP_SCAN, 100ms);
@@ -100,8 +105,6 @@ void initializeGpioClientThread(ThreadMap& threads) {
 			utils::blinkLed(LED::LED_GPIO_COPY_DATA, 100ms);
 		}
 		std::cout << "GPIO Init done" << std::endl;
-		gpioClientPtr->addButtonCallback(BUTTON::BUTTON_STOP_SCAN, "BUTTON_STOP_SCAN", [&]() { TriggerStopScan(); });
-		gpioClientPtr->addButtonCallback(BUTTON::BUTTON_CONTINOUS_SCANNING, "BUTTON_CONTINOUS_SCANNING", [&]() { TriggerContinousScanning(); });
 
 		std::unique_lock<std::shared_mutex> lock(clientsMutex);
 		jsonReportProducerClients.push_back(gpioClientPtr);
@@ -137,8 +140,6 @@ int main(int argc, char** argv)
 	ThreadMap threadsWithNames;
 	std::shared_ptr<Pistache::Http::Endpoint> server;
 
-	signal(SIGINT, stopApplication);
-
 	initializePistacheServerThread(threadsWithNames, server);
 	initializeFileSystemClient();
 	initializeLivoxClient(lidar_error);
@@ -146,6 +147,8 @@ int main(int argc, char** argv)
 	initializeStateMachineThread(threadsWithNames);
 	initializeGpioClientThread(threadsWithNames);
 	initializeCameraClientThread(threadsWithNames);
+
+	signal(SIGINT, stopApplication);
 
 	// Main cycle (cli interface)
 	using namespace std::chrono_literals;
