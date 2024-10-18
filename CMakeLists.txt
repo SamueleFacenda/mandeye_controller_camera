@@ -76,14 +76,14 @@ target_include_directories(control_program
 
 set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -latomic")
 message("${TBB_LIBRARIES}")
-target_link_libraries(control_program livox_lidar_sdk_static pistache atomic laszip ${LIBSERIAL_LIBRARY} minea ${OpenCV_LIBS} ${TBB_LIBRARIES} ${pigpio_LIBRARY})
+target_link_libraries(control_program livox_lidar_sdk_static pistache atomic laszip ${LIBSERIAL_LIBRARY} minea ${OpenCV_LIBS} ${TBB_LIBRARIES} ${pigpiod_if2_LIBRARY})
 
 add_executable(led_demo src/demos/led_demo.cpp src/clients/concrete/GpioClient.cpp)
 target_include_directories(led_demo PRIVATE include)
 set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS}")
-target_link_libraries(led_demo ${pigpio_LIBRARY})
+target_link_libraries(led_demo ${pigpiod_if2_LIBRARY})
 
 add_executable(button_demo src/demos/button_demo.cpp src/clients/concrete/GpioClient.cpp)
 target_include_directories(button_demo PRIVATE include)
 set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS}")
-target_link_libraries(button_demo ${pigpio_LIBRARY})
+target_link_libraries(button_demo ${pigpiod_if2_LIBRARY})

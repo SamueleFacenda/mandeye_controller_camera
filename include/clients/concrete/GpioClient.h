@@ -3,7 +3,6 @@
 #include <json.hpp>
 #include <mutex>
 #include <unordered_map>
-#include <pigpio.h>
 
 namespace mandeye
 {
@@ -24,7 +23,7 @@ class GpioClient : public JsonStateProducer
 public:
 	//! Constructor
 	//! @param sim if true hardware is not called
-	GpioClient(bool sim);
+	explicit GpioClient(bool sim);
 	~GpioClient();
 
 	//! serialize component state to API
@@ -44,6 +43,7 @@ private:
 
 	//! use simulated GPIOs instead real one
 	bool m_useSimulatedGPIO{true};
+	int m_piHandle{-1};
 
 	std::unordered_map<LED, bool> m_ledState{
 		{LED::LED_GPIO_STOP_SCAN, false},
@@ -63,7 +63,7 @@ private:
 
 	std::unordered_map<BUTTON, Callbacks> m_buttonsCallbacks;
 
-	static void btnCallback(int gpio, int level, uint32_t tick, void* userdata);
+	static void btnCallback(int pi, unsigned gpio, unsigned level, uint32_t tick, void* userdata);
 	void initLed(LED led);
 	void initButton(BUTTON btn);
 

@@ -1,5 +1,6 @@
 #include "clients/concrete/GpioClient.h"
 #include <iostream>
+#include <pigpiod_if2.h>
 
 #define DEBOUNCE_TIME 10000
 
@@ -14,7 +15,8 @@ GpioClient::GpioClient(bool sim)
 		m_buttonsCallbacks[id] = Callbacks{};
 
 	if(!sim) {
-		if (gpioInitialise() == PI_INIT_FAILED) {
+		m_piHandle = pigpio_start(nullptr, nullptr);
+		if (m_piHandle) {
 			std::cout << "ERROR: Failed to initialize the GPIO interface." << std::endl;
 			return;
 		}
@@ -36,7 +38,7 @@ GpioClient::GpioClient(bool sim)
 
 GpioClient::~GpioClient() {
 	if(!m_useSimulatedGPIO)
-		gpioTerminate();
+		pigpio_stop(m_piHandle);
 }
 
 
@@ -75,7 +77,7 @@ void GpioClient::setLed(LED led, bool state)
 	std::lock_guard<std::mutex> lck{m_lock};
 	m_ledState[led] = state;
 	if(!m_useSimulatedGPIO)
-		gpioWrite((int) led, state);
+		gpio_write(m_piHandle, (int) led, state);
 }
 
 void GpioClient::addButtonCallback(BUTTON btn,
@@ -99,12 +101,13 @@ std::string GpioClient::getJsonName()
 }
 
 void GpioClient::initLed(LED led) {
-	gpioSetMode((int) led, PI_OUTPUT);
-	gpioWrite((int) led, PI_LOW);
+	set_mode(m_piHandle, (int) led, PI_OUTPUT);
+	gpio_write(m_piHandle, (int) led, PI_LOW);
 	m_ledState[led] = false;
 }
 
-void GpioClient::btnCallback(int gpio, int level, uint32_t tick, void* userdata) {
+void GpioClient::btnCallback(int pi, unsigned gpio, unsigned level, uint32_t tick, void* userdata)
+{
 	auto* thiss = (GpioClient*) userdata;
 	auto btn = (BUTTON) gpio;
 	if (tick - thiss->m_buttonLastPressTime[btn] < DEBOUNCE_TIME)
@@ -120,9 +123,9 @@ void GpioClient::btnCallback(int gpio, int level, uint32_t tick, void* userdata)
 }
 
 void GpioClient::initButton(BUTTON btn) {
-	gpioSetMode((int) btn, PI_INPUT);
-	gpioSetPullUpDown((int) btn, PI_PUD_UP);
-	gpioSetAlertFuncEx((int) btn, btnCallback, this);
+	set_mode(m_piHandle, (int) btn, PI_INPUT);
+	set_pull_up_down(m_piHandle, (int) btn, PI_PUD_UP);
+	callback_ex(0, (int)btn, EITHER_EDGE, btnCallback, this);
 	m_buttonState[btn] = false;
 }
 
