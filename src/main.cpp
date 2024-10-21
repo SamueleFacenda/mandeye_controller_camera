@@ -149,6 +149,7 @@ int main(int argc, char** argv)
 	initializeCameraClientThread(threadsWithNames);
 
 	signal(SIGINT, stopApplication);
+	signal(SIGTERM, stopApplication);
 
 	// Main cycle (cli interface)
 	using namespace std::chrono_literals;
