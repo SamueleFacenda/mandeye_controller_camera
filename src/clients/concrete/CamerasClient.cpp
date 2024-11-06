@@ -12,8 +12,9 @@
 // 5, 10, 15, 20, 25, 30, 60, 90
 #define IMAGE_CAPTURE_FPS 10
 #define OPENCV_IMAGE_BUFFER_SIZE 4
-#define MAX_IMAGES_BUFFER_SIZE 16
-#define SAFE_IMAGES_BUFFER_SIZE 8
+#define MAX_IMAGES_BUFFER_SIZE (200/7)
+#define SAFE_IMAGES_BUFFER_SIZE (100/7)
+#define BATCH_SAVE_SIZE 0
 
 namespace mandeye {
 
@@ -127,13 +128,25 @@ void CamerasClient::receiveImages() {
 void CamerasClient::writeImages() {
 	StampedImage tmp;
 	ImageInfo tmpInfo;
+	bool batchSaveCountReached = false, isLedOn = false;
 	while(isRunning.load()) {
+		// std::cout << "Images in buffer: " << writeBuffer.size() << " " << batchSaveCountReached << std::endl;
 		if (writeBuffer.size() > MAX_IMAGES_BUFFER_SIZE) {
 			writeBuffer.keepN(SAFE_IMAGES_BUFFER_SIZE);
 			std::cout << "Dropping images, buffer is full" << std::endl;
 		}
 
+		if (writeBuffer.size() < BATCH_SAVE_SIZE && !batchSaveCountReached) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			continue;
+		} else
+			batchSaveCountReached = true;
+
 		tmp = writeBuffer.pop();
+
+		if (writeBuffer.size() == 0)
+			batchSaveCountReached = false;
+
 		if (tmp.cameraIndex < 0) // empty image
 			continue;
 
@@ -146,7 +159,13 @@ void CamerasClient::writeImages() {
 		auto end = std::chrono::high_resolution_clock::now();
 		double fps = 1.0 / std::chrono::duration<double>(end - now).count();
 		if (fps / caps.size() < FPS)
-			std::cout << "Warning!! Writing image to disk took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - now).count() << " ms" << std::endl;
+		{
+			std::cout << "Warning!! Writing image to disk took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - now).count() << " ms"
+					  << std::endl;
+			// use unused LED to signal that we are slow writing images
+			gpioClientPtr->setLed(LED::LED_GPIO_STOP_SCAN, isLedOn);
+			isLedOn = !isLedOn;
+		}
 	}
 }
 
@@ -187,11 +206,7 @@ std::filesystem::path CamerasClient::getFinalFilePath(const std::filesystem::pat
 }
 
 void CamerasClient::readImagesFromCaps() {
-	bool isLedOn = false;
 	while(isRunning.load()) {
-		// use unused LED to signal that we are reading images
-		gpioClientPtr->setLed(LED::LED_GPIO_STOP_SCAN, isLedOn);
-		isLedOn = !isLedOn;
 		auto start = std::chrono::high_resolution_clock::now();
 
 		std::vector<StampedImage> currentImages = readSyncedImages();
