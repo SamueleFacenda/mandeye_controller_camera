@@ -16,7 +16,7 @@ class FileSystemClient : public JsonStateProducer
 	constexpr static char versionFilename[]{"version.txt"};
 
 public:
-	FileSystemClient(const std::string& repository);
+	FileSystemClient(std::string  repository);
 	nlohmann::json produceStatus() override;
 	std::string getJsonName() override;
 

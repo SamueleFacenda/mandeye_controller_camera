@@ -4,10 +4,10 @@
 #include <execution>
 #include <ranges>
 
-#define MAX_CAMERA_INDEX 10
+#define MAX_CAMERA_INDEX 6
 #define CAMERA_WIDTH 1920
 #define CAMERA_HEIGHT 1200
-#define FPS 5
+#define FPS 2
 #define IMAGE_FORMAT ".jpg"
 // 5, 10, 15, 20, 25, 30, 60, 90
 #define IMAGE_CAPTURE_FPS 10

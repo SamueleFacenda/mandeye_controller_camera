@@ -3,15 +3,17 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <utility>
 #include <unistd.h>
 namespace mandeye
 {
 
-FileSystemClient::FileSystemClient(const std::string& repository)
-	: m_repository(repository)
+FileSystemClient::FileSystemClient(std::string repository)
+	: m_repository(std::move(repository))
 {
 	m_nextId = GetIdFromManifest();
 }
+
 nlohmann::json FileSystemClient::produceStatus()
 {
 	nlohmann::json data;
@@ -81,29 +83,29 @@ int32_t FileSystemClient::GetIdFromManifest()
 {
 	std::filesystem::path versionfn =
 		std::filesystem::path(m_repository) / std::filesystem::path(versionFilename);
-	std::ofstream versionOFstream;
-	versionOFstream.open(versionfn.c_str());
+	std::ofstream versionOFstream(versionfn);
 	versionOFstream << "Version 0.4" << std::endl;
+	versionOFstream.close();
 	
 	std::filesystem::path manifest =
 		std::filesystem::path(m_repository) / std::filesystem::path(manifestFilename);
 	std::unique_lock<std::mutex> lck(m_mutex);
 
-	std::ifstream manifestFstream;
-	manifestFstream.open(manifest.c_str());
+	std::ifstream manifestFstream(manifest);
 	if(manifestFstream.good() && manifestFstream.is_open())
 	{
 		uint32_t id{0};
 		manifestFstream >> id;
-		return (id++);
+		return id;
 	}
-	std::ofstream manifestOFstream;
-	manifestOFstream.open(manifest.c_str());
+
+	// first time
+	std::ofstream manifestOFstream(manifest);
 	if(manifestOFstream.good() && manifestOFstream.is_open())
 	{
 		uint32_t id{0};
 		manifestOFstream << id << std::endl;
-		return (id++);
+		return id;
 	}
 	//
 	
@@ -132,62 +134,49 @@ bool FileSystemClient::CreateDirectoryForContinousScanning(std::string &writable
 {
 	std::string ret;
 
-	if(GetIsWritable())
-	{
-		//auto id = GetNextIdFromManifest();
-		auto id = id_manifest;
-		char dirName[256];
-		snprintf(dirName, 256, "continousScanning_%04d", id);
-		std::filesystem::path newDirPath =
-			std::filesystem::path(m_repository) / std::filesystem::path(dirName);
-		std::cout << "Creating directory " << newDirPath.string() << std::endl;
-		std::error_code ec;
-		std::filesystem::create_directories(newDirPath, ec);
-		m_error = ec.message();
-		if(ec.value() == 0)
-		{
-			if(!newDirPath.string().empty()){
-				writable_dir = newDirPath.string();
-				return true;
-			}else{
-				return false;
-			}
-		}else{
-			return false;
-		}
-	}else{
+	if(!GetIsWritable())
 		return false;
-	}
+
+	auto id = id_manifest;
+	char dirName[256];
+	snprintf(dirName, 256, "continousScanning_%04d", id);
+	std::filesystem::path newDirPath =
+		std::filesystem::path(m_repository) / std::filesystem::path(dirName);
+	std::cout << "Creating directory " << newDirPath.string() << std::endl;
+	std::error_code ec;
+	std::filesystem::create_directories(newDirPath, ec);
+	m_error = ec.message();
+	if(ec.value() != 0)
+		return false;
+	if(newDirPath.string().empty())
+		return false;
+
+	writable_dir = newDirPath.string();
+	return true;
 }
 
 bool FileSystemClient::CreateDirectoryForStopScans(std::string &writable_dir, int &id_manifest){
 	std::string ret;
 
-	if(GetIsWritable())
-	{
-		id_manifest = GetNextIdFromManifest() - 1;
-		char dirName[256];
-		snprintf(dirName, 256, "stopScans_%04d", id_manifest);
-		std::filesystem::path newDirPath =
-			std::filesystem::path(m_repository) / std::filesystem::path(dirName);
-		std::cout << "Creating directory " << newDirPath.string() << std::endl;
-		std::error_code ec;
-		std::filesystem::create_directories(newDirPath, ec);
-		m_error = ec.message();
-		if(ec.value() == 0)
-		{
-			if(!newDirPath.string().empty()){
-				writable_dir = newDirPath.string();
-				return true;
-			}else{
-				return false;
-			}
-		}else{
-			return false;
-		}
-	}else{
+	if(!GetIsWritable())
 		return false;
-	}
+
+	id_manifest = GetNextIdFromManifest() - 1;
+	char dirName[256];
+	snprintf(dirName, 256, "stopScans_%04d", id_manifest);
+	std::filesystem::path newDirPath =
+		std::filesystem::path(m_repository) / std::filesystem::path(dirName);
+	std::cout << "Creating directory " << newDirPath.string() << std::endl;
+	std::error_code ec;
+	std::filesystem::create_directories(newDirPath, ec);
+	m_error = ec.message();
+	if(ec.value() != 0)
+		return false;
+	if (newDirPath.string().empty())
+		return false;
+
+	writable_dir = newDirPath.string();
+	return true;
 }
 
 std::vector<std::string> FileSystemClient::GetDirectories()
@@ -214,14 +203,7 @@ std::vector<std::string> FileSystemClient::GetDirectories()
 
 bool FileSystemClient::GetIsWritable()
 {
-	if(access(m_repository.c_str(), W_OK) == 0)
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
+	return access(m_repository.c_str(), W_OK) == 0;
 }
 
 std::string FileSystemClient::getJsonName()
