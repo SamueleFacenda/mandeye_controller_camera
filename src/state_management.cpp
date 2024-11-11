@@ -7,7 +7,6 @@
 #include "clients/concrete/LivoxClient.h"
 #include "utils/utils.h"
 
-// in seconds
 #define STOP_SCAN_DURATION 10s
 #define CONTINOUS_SCAN_SAVE_INTERVAL 10s
 #define STOP_SCAN_DELAY 5s
@@ -29,7 +28,7 @@ std::atomic<int> initializationLatch{1}; // there are `n` initialization steps: 
 std::string produceReport() {
 	using json = nlohmann::json;
 	json j;
-	j["name"] = "Mandye";
+	j["name"] = "Mandeye";
 	j["state"] = StatesToString.at(app_state);
 	j["livox"] = {};
 	j["gnss"] = {};
@@ -100,13 +99,13 @@ bool saveChunkToDisk(const std::string& outDirectory, int chunk, bool stopScan) 
 	return true;
 }
 
-using namespace std::chrono_literals;
 
 void stateWatcher() {
+	using namespace std::chrono_literals;
 	std::chrono::steady_clock::time_point chunkStart, stopScanDeadline, stopScanInitialDeadline, now;
 	States oldState = States::IDLE;
 	std::string continousScanDirectory, stopScanDirectory;
-	int chunksInExperimentCS = 0, chunksInExperimentSS = 0;
+	int continousScanningChunks = 0, stopScanChunks = 0;
 	bool savingDone;
 
 	int id_manifest = 0;
@@ -173,26 +172,21 @@ void stateWatcher() {
 			gpioClientPtr->setLed(LED::LED_GPIO_CONTINOUS_SCANNING, true);
 
 			now = std::chrono::steady_clock::now();
-			if(now - chunkStart > 60s)
-				utils::blinkLed(LED::LED_GPIO_CONTINOUS_SCANNING, 1000ms);
-			if(now - chunkStart > 600s)
-				utils::blinkLed(LED::LED_GPIO_CONTINOUS_SCANNING, 100ms);
-
 			if(now - chunkStart > CONTINOUS_SCAN_SAVE_INTERVAL) {
 				chunkStart = std::chrono::steady_clock::now();
 
-				savingDone = saveChunkToDisk(continousScanDirectory, chunksInExperimentCS + chunksInExperimentSS, false);
+				savingDone = saveChunkToDisk(continousScanDirectory, continousScanningChunks + stopScanChunks, false);
 				if(savingDone)
-					chunksInExperimentCS++;
+					continousScanningChunks++;
 			}
 			std::this_thread::sleep_for(100ms);
 
 			break;
 		case States::STOPPING:
 			gpioClientPtr->setLed(LED::LED_GPIO_CONTINOUS_SCANNING, true);
-			savingDone = saveChunkToDisk(continousScanDirectory, chunksInExperimentCS + chunksInExperimentSS, true);
+			savingDone = saveChunkToDisk(continousScanDirectory, continousScanningChunks + stopScanChunks, true);
 			if(savingDone) {
-				chunksInExperimentCS++;
+				continousScanningChunks++;
 				app_state = States::IDLE;
 			}
 
@@ -229,9 +223,9 @@ void stateWatcher() {
 
 			break;
 		case States::STOPPING_STOP_SCAN:
-			savingDone = saveChunkToDisk(stopScanDirectory, chunksInExperimentCS + chunksInExperimentSS, true);
+			savingDone = saveChunkToDisk(stopScanDirectory, continousScanningChunks + stopScanChunks, true);
 			if(savingDone) {
-				chunksInExperimentSS++;
+				stopScanChunks++;
 				app_state = States::IDLE;
 				gpioClientPtr->setLed(LED::LED_GPIO_STOP_SCAN, false);
 			}

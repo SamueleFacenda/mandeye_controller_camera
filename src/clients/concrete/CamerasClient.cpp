@@ -16,10 +16,10 @@
 #define SAFE_IMAGES_BUFFER_SIZE (100 / 7)
 #define BATCH_SAVE_SIZE 0
 
+using namespace cv;
+
 namespace mandeye
 {
-
-using namespace cv;
 
 CamerasClient::CamerasClient(const std::string& savingMediaPath, ThreadMap& threadsList) {
 	isLogging.store(false);
