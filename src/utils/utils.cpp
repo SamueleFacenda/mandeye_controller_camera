@@ -3,28 +3,20 @@
 
 namespace utils
 {
-std::string getEnvString(const std::string& env, const std::string& def)
-{
+std::string getEnvString(const std::string& env, const std::string& def) {
 	const char* env_p = std::getenv(env.c_str());
 	if(env_p == nullptr)
-	{
 		return def;
-	}
+
 	return std::string{env_p};
 }
 
-bool getEnvBool(const std::string& env, bool def)
-{
+bool getEnvBool(const std::string& env, bool def) {
 	const char* env_p = std::getenv(env.c_str());
 	if(env_p == nullptr)
-	{
 		return def;
-	}
-	if(strcmp("1", env_p) == 0 || strcmp("true", env_p) == 0)
-	{
-		return true;
-	}
-	return false;
+
+	return strcmp("1", env_p) == 0 || strcmp("true", env_p) == 0;
 }
 
 void blinkLed(mandeye::LED led, std::chrono::milliseconds mills) {
@@ -35,19 +27,8 @@ void blinkLed(mandeye::LED led, std::chrono::milliseconds mills) {
 }
 
 void syncDisk() {
-	if (system("sync")) {
+	if(system("sync"))
 		std::cerr << "Error syncing disk\n";
-	}
 }
 
-std::vector<int> getIntListFromEnvVar(const std::string& env, const std::string& def)
-{
-	std::vector<int> out;
-	std::istringstream iss(getEnvString(env, def));
-	int tmp;
-	while (iss >> tmp)
-		out.push_back(tmp);
-	return out;
-}
-
-}
+} // namespace utils

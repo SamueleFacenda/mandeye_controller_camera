@@ -10,13 +10,12 @@
 namespace mandeye
 {
 
-class FileSystemClient : public JsonStateProducer
-{
+class FileSystemClient : public JsonStateProducer {
 	constexpr static char manifestFilename[]{"mandala_manifest.txt"};
 	constexpr static char versionFilename[]{"version.txt"};
 
 public:
-	FileSystemClient(std::string  repository);
+	FileSystemClient(std::string repository);
 	nlohmann::json produceStatus() override;
 	std::string getJsonName() override;
 
@@ -24,24 +23,23 @@ public:
 	float CheckAvailableSpace();
 
 	//! Create Counter file
-	int32_t GetIdFromManifest();
+	int GetIdFromManifest();
 
 	//! Create Counter file
-	int32_t GetNextIdFromManifest();
+	int GetNextIdFromManifest();
 
 	//! Get is writable
 	bool GetIsWritable();
 
 	std::vector<std::string> GetDirectories();
 
-	bool CreateDirectoryForContinousScanning(std::string &, const int &);
+	bool CreateDirectoryForContinousScanning(std::string&, const int&);
 
-	bool CreateDirectoryForStopScans(std::string &, int &id_manifest);
-
+	bool CreateDirectoryForStopScans(std::string&, int& id_manifest);
 
 private:
 	int32_t m_nextId{0};
-	std::string ConvertToText(float mb);
+	static std::string ConvertMbToText(float mb);
 	std::string m_repository;
 	std::string m_error;
 	std::mutex m_mutex;

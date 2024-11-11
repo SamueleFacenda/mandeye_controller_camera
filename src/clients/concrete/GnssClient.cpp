@@ -6,11 +6,9 @@
 namespace mandeye
 {
 
-GNSSClient::GNSSClient()
-	: bufferSaver("gnss", "gnss", [](const std::string& in) { return in; }) {}
+GNSSClient::GNSSClient() : bufferSaver("gnss", "gnss", [](const std::string& in) { return in; }) {}
 
-nlohmann::json GNSSClient::produceStatus()
-{
+nlohmann::json GNSSClient::produceStatus() {
 	nlohmann::json data;
 	data["init_success"] = init_succes;
 	std::lock_guard<std::mutex> lock(m_bufferMutex);
@@ -31,59 +29,49 @@ nlohmann::json GNSSClient::produceStatus()
 }
 
 bool GNSSClient::startListener(const std::string& portName, int baudRate) {
-	assert(baudRate == 9600);//Only 9600 is supported
-	try
-	{
-		if (init_succes)
-		{
+	assert(baudRate == 9600); //Only 9600 is supported
+	try {
+		if(init_succes) {
 			return true;
 		}
-		if (m_serialPort.IsOpen())
-		{
+		if(m_serialPort.IsOpen()) {
 			m_serialPort.Close();
 		}
 		m_serialPort.Open(portName, std::ios_base::in);
 		m_serialPort.SetBaudRate(LibSerial::BaudRate::BAUD_9600);
 		init_succes = true;
 		m_serialPortThread = std::thread(&GNSSClient::worker, this);
-	}catch(std::exception& e)
-	{
-		std::cout << "Failed to open port " << portName <<" : " << e.what()  << std::endl;
+	}
+	catch(std::exception& e) {
+		std::cout << "Failed to open port " << portName << " : " << e.what() << std::endl;
 		init_succes = false;
 		return false;
 	}
 	return true;
 }
 
-void GNSSClient::worker()
-{
+void GNSSClient::worker() {
 	std::cout << "Worker started" << std::endl;
-	while(m_serialPort.IsOpen())
-	{
+	while(m_serialPort.IsOpen()) {
 		std::string line;
 		m_serialPort.ReadLine(line);
 		std::cout << "line: '" << line << "'" << std::endl;
 
 		bool is_vaild = minmea_check(line.c_str(), true);
-		if (is_vaild)
-		{
+		if(is_vaild) {
 			minmea_sentence_gga gga;
 			bool isGGA = minmea_parse_gga(&gga, line.c_str());
-			if (isGGA)
-			{
+			if(isGGA) {
 				uint64_t laserTimestamp = GetTimeStamp();
 				std::string csvline = GgaToCsvLine(gga, laserTimestamp);
 				std::lock_guard<std::mutex> lock(m_bufferMutex);
 				std::swap(m_lastLine, line);
 				lastGGA = gga;
-				if(m_isLogging)
-				{
+				if(m_isLogging) {
 					m_buffer.emplace_back(csvline);
 				}
 			}
-		}
-		else
-		{
+		} else {
 			std::cout << "Invalid line: " << line << std::endl;
 		}
 	}
@@ -100,8 +88,7 @@ void GNSSClient::stopLog() {
 	m_isLogging = false;
 }
 
-std::deque<std::string> GNSSClient::retrieveData()
-{
+std::deque<std::string> GNSSClient::retrieveData() {
 	std::lock_guard<std::mutex> lock(m_bufferMutex);
 	std::deque<std::string> ret;
 	std::swap(ret, m_buffer);
@@ -117,13 +104,13 @@ std::deque<std::string> GNSSClient::retrieveData()
 }
 
 //! Convert a minmea_sentence_gga to a CSV line
-std::string GNSSClient::GgaToCsvLine(const minmea_sentence_gga& gga, uint64_t laserTimestamp)
-{
-	std:std::stringstream oss;
+std::string GNSSClient::GgaToCsvLine(const minmea_sentence_gga& gga, uint64_t laserTimestamp) {
+std:
+	std::stringstream oss;
 	oss << std::setprecision(20) << laserTimestamp << " ";
 	oss << minmea_tocoord(&gga.latitude) << " ";
-	oss	<< minmea_tocoord(&gga.longitude) << " ";
-	oss	<< minmea_tofloat(&gga.altitude) << " ";
+	oss << minmea_tocoord(&gga.longitude) << " ";
+	oss << minmea_tofloat(&gga.altitude) << " ";
 	oss << minmea_tofloat(&gga.hdop) << " ";
 	oss << gga.satellites_tracked << " ";
 	oss << minmea_tofloat(&gga.height) << " ";
@@ -133,8 +120,7 @@ std::string GNSSClient::GgaToCsvLine(const minmea_sentence_gga& gga, uint64_t la
 	return oss.str();
 }
 
-std::string GNSSClient::getJsonName()
-{
+std::string GNSSClient::getJsonName() {
 	return "gnss";
 }
 

@@ -7,8 +7,7 @@
 namespace mandeye
 {
 //! used only for testing purposes
-class SystemTimeStampProvider: public TimeStampProvider
-{
+class SystemTimeStampProvider : public TimeStampProvider {
 
 public:
 	uint64_t getTimestamp() override;

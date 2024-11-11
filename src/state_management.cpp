@@ -1,11 +1,11 @@
 #include "state_management.h"
+#include <execution>
+#include <iostream>
+#include <string>
 #include "clients/concrete/FileSystemClient.h"
 #include "clients/concrete/GpioClient.h"
 #include "clients/concrete/LivoxClient.h"
 #include "utils/utils.h"
-#include <iostream>
-#include <string>
-#include <execution>
 
 // in seconds
 #define STOP_SCAN_DURATION 10s
@@ -26,9 +26,7 @@ std::vector<std::shared_ptr<JsonStateProducer>> jsonReportProducerClients;
 std::shared_mutex clientsMutex; // only used in initialization
 std::atomic<int> initializationLatch{1}; // there are `n` initialization steps: just gpio client now
 
-
-std::string produceReport()
-{
+std::string produceReport() {
 	using json = nlohmann::json;
 	json j;
 	j["name"] = "Mandye";
@@ -36,7 +34,7 @@ std::string produceReport()
 	j["livox"] = {};
 	j["gnss"] = {};
 
-	for (auto& client : jsonReportProducerClients)
+	for(auto& client : jsonReportProducerClients)
 		j[client->getJsonName()] = client->produceStatus();
 
 	std::ostringstream s;
@@ -44,65 +42,56 @@ std::string produceReport()
 	return s.str();
 }
 
-bool StartScan()
-{
-	if(app_state == States::IDLE)
-	{
+bool StartScan() {
+	if(app_state == States::IDLE) {
 		app_state = States::STARTING_SCAN;
 		return true;
 	}
 	return false;
 }
-bool StopScan()
-{
-	if(app_state == States::SCANNING)
-	{
+bool StopScan() {
+	if(app_state == States::SCANNING) {
 		app_state = States::STOPPING;
 		return true;
 	}
 	return false;
 }
 
-bool TriggerStopScan()
-{
-	if(app_state == States::IDLE)
-	{
+bool TriggerStopScan() {
+	if(app_state == States::IDLE) {
 		app_state = States::STARTING_STOP_SCAN;
 		return true;
 	}
 	return false;
 }
 
-bool TriggerContinousScanning(){
-	if(app_state == States::IDLE){
+bool TriggerContinousScanning() {
+	if(app_state == States::IDLE) {
 		app_state = States::STARTING_SCAN;
 		return true;
-	}else if(app_state == States::SCANNING)
-	{
+	} else if(app_state == States::SCANNING) {
 		app_state = States::STOPPING;
 		return true;
 	}
 	return false;
 }
 
-bool saveChunkToDisk(const std::string& outDirectory, int chunk, bool stopScan)
-{
-	if(outDirectory.empty())
-	{
+bool saveChunkToDisk(const std::string& outDirectory, int chunk, bool stopScan) {
+	if(outDirectory.empty()) {
 		app_state = States::USB_IO_ERROR;
 		return false;
 	}
 	gpioClientPtr->setLed(LED::LED_GPIO_COPY_DATA, true);
 
-	for(auto& client: saveableClients)
+	for(auto& client : saveableClients)
 		client->dumpChunkInternally(); // instant dump
 
 	if(stopScan)
-		for(auto& client: loggerClients)
+		for(auto& client : loggerClients)
 			client->stopLog();
 
 	// parallelize the saving of the chunks
-	std::for_each(std::execution::par_unseq, saveableClients.begin(), saveableClients.end(), [&outDirectory, chunk](auto& client){
+	std::for_each(std::execution::par_unseq, saveableClients.begin(), saveableClients.end(), [&outDirectory, chunk](auto& client) {
 		client->saveDumpedChunkToDirectory(outDirectory, chunk);
 	});
 
@@ -113,8 +102,7 @@ bool saveChunkToDisk(const std::string& outDirectory, int chunk, bool stopScan)
 
 using namespace std::chrono_literals;
 
-void stateWatcher()
-{
+void stateWatcher() {
 	std::chrono::steady_clock::time_point chunkStart, stopScanDeadline, stopScanInitialDeadline, now;
 	States oldState = States::IDLE;
 	std::string continousScanDirectory, stopScanDirectory;
@@ -122,29 +110,24 @@ void stateWatcher()
 	bool savingDone;
 
 	int id_manifest = 0;
-	if (stopScanDirectory.empty() && fileSystemClientPtr)
-	{
-		if(!fileSystemClientPtr->CreateDirectoryForStopScans(stopScanDirectory, id_manifest)){
+	if(stopScanDirectory.empty() && fileSystemClientPtr) {
+		if(!fileSystemClientPtr->CreateDirectoryForStopScans(stopScanDirectory, id_manifest))
 			app_state = States::USB_IO_ERROR;
-		}
-	}
-	if(stopScanDirectory.empty()){
-		app_state = States::USB_IO_ERROR;
 	}
 
-	if(!fileSystemClientPtr->CreateDirectoryForContinousScanning(continousScanDirectory, id_manifest)){
+	if(stopScanDirectory.empty())
 		app_state = States::USB_IO_ERROR;
-	}
 
-	while(isRunning.load())
-	{
+	if(!fileSystemClientPtr->CreateDirectoryForContinousScanning(continousScanDirectory, id_manifest))
+		app_state = States::USB_IO_ERROR;
+
+	while(isRunning.load()) {
 		if(oldState != app_state)
-		{
 			std::cout << "State transition from " << StatesToString.at(oldState) << " to " << StatesToString.at(app_state) << std::endl;
-		}
+
 		oldState = app_state;
 
-		switch (app_state) {
+		switch(app_state) {
 		case States::LIDAR_ERROR:
 			gpioClientPtr->setLed(LED::LED_GPIO_STOP_SCAN, false);
 			gpioClientPtr->setLed(LED::LED_GPIO_CONTINOUS_SCANNING, false);
@@ -195,8 +178,7 @@ void stateWatcher()
 			if(now - chunkStart > 600s)
 				utils::blinkLed(LED::LED_GPIO_CONTINOUS_SCANNING, 100ms);
 
-			if(now - chunkStart > CONTINOUS_SCAN_SAVE_INTERVAL)
-			{
+			if(now - chunkStart > CONTINOUS_SCAN_SAVE_INTERVAL) {
 				chunkStart = std::chrono::steady_clock::now();
 
 				savingDone = saveChunkToDisk(continousScanDirectory, chunksInExperimentCS + chunksInExperimentSS, false);
@@ -209,8 +191,7 @@ void stateWatcher()
 		case States::STOPPING:
 			gpioClientPtr->setLed(LED::LED_GPIO_CONTINOUS_SCANNING, true);
 			savingDone = saveChunkToDisk(continousScanDirectory, chunksInExperimentCS + chunksInExperimentSS, true);
-			if(savingDone)
-			{
+			if(savingDone) {
 				chunksInExperimentCS++;
 				app_state = States::IDLE;
 			}
@@ -232,8 +213,7 @@ void stateWatcher()
 
 			if(now < stopScanInitialDeadline)
 				utils::blinkLed(LED::LED_GPIO_STOP_SCAN, 100ms);
-			else
-			{
+			else {
 				gpioClientPtr->setLed(LED::LED_GPIO_STOP_SCAN, true);
 				for(auto& client : loggerClients)
 					client->startLog();
@@ -250,8 +230,7 @@ void stateWatcher()
 			break;
 		case States::STOPPING_STOP_SCAN:
 			savingDone = saveChunkToDisk(stopScanDirectory, chunksInExperimentCS + chunksInExperimentSS, true);
-			if(savingDone)
-			{
+			if(savingDone) {
 				chunksInExperimentSS++;
 				app_state = States::IDLE;
 				gpioClientPtr->setLed(LED::LED_GPIO_STOP_SCAN, false);

@@ -12,16 +12,14 @@
 namespace mandeye
 {
 
-struct LivoxPoint
-{
+struct LivoxPoint {
 	LivoxLidarCartesianHighRawPoint point;
 	uint64_t timestamp;
 	uint8_t line_id;
 	uint16_t laser_id;
 };
 
-struct LivoxIMU
-{
+struct LivoxIMU {
 	LivoxLidarImuRawPoint point;
 	uint64_t timestamp;
 	uint16_t laser_id;
@@ -45,7 +43,7 @@ using LivoxPointsBufferConstPtr = std::shared_ptr<const std::deque<LivoxPoint>>;
 using LivoxIMUBuffer = std::deque<LivoxIMU>;
 using LivoxIMUBufferPtr = std::shared_ptr<std::deque<LivoxIMU>>;
 using LivoxIMUBufferConstPtr = std::shared_ptr<const std::deque<LivoxIMU>>;
-using ThreadMap = std::unordered_map<std::string,std::shared_ptr<std::thread>>;
+using ThreadMap = std::unordered_map<std::string, std::shared_ptr<std::thread>>;
 
 } // namespace mandeye
 

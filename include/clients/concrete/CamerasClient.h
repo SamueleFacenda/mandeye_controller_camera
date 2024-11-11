@@ -12,7 +12,8 @@
 #include <opencv2/opencv.hpp>
 #include <thread>
 
-namespace mandeye {
+namespace mandeye
+{
 
 struct ImageInfo {
 	std::filesystem::path path;
@@ -27,33 +28,33 @@ struct StampedImage {
 };
 
 class CamerasClient : public TimeStampReceiver, public SaveChunkToDirClient, public LoggerClient {
-	public:
-		CamerasClient(const std::string& savingMediaPath, ThreadMap& threadsList); // threadsList for joining the threads at shutdown
-		void receiveImages();
-		void saveDumpedChunkToDirectory(const std::filesystem::path& directory, int chunk) override;
-		void dumpChunkInternally() override;
-		void startLog() override;
-		void stopLog() override;
+public:
+	CamerasClient(const std::string& savingMediaPath, ThreadMap& threadsList); // threadsList for joining the threads at shutdown
+	void receiveImages();
+	void saveDumpedChunkToDirectory(const std::filesystem::path& directory, int chunk) override;
+	void dumpChunkInternally() override;
+	void startLog() override;
+	void stopLog() override;
 
-	private:
-		std::filesystem::path tmpDir; // on the final media device
-		std::vector<cv::VideoCapture> caps;
-		std::mutex bufferMutex;
-		std::mutex imagesMutex;
-		std::vector<StampedImage> imagesBuffer;
-		std::vector<ImageInfo> savedImagesBuffer;
-		std::atomic<bool> isLogging{false};
-		int tmpImageCounter = 0;
-		std::vector<ImageInfo> dumpBuffer; // needed by SaveChunkToDirClient
-		utils::BlockingQueue<StampedImage> writeBuffer;
+private:
+	std::filesystem::path tmpDir; // on the final media device
+	std::vector<cv::VideoCapture> caps;
+	std::mutex bufferMutex;
+	std::mutex imagesMutex;
+	std::vector<StampedImage> imagesBuffer;
+	std::vector<ImageInfo> savedImagesBuffer;
+	std::atomic<bool> isLogging{false};
+	int tmpImageCounter = 0;
+	std::vector<ImageInfo> dumpBuffer; // needed by SaveChunkToDirClient
+	utils::BlockingQueue<StampedImage> writeBuffer;
 
-		void initializeVideoCapture(int index);
-		ImageInfo preWriteImageToDisk(const StampedImage& img);
-		void writeImages(); // thread
-		void readImagesFromCaps(); // Images grabber thread
-		std::vector<StampedImage> readSyncedImages();
-		std::filesystem::path generateTmpFilePath();
-		static std::filesystem::path getFinalFilePath(const std::filesystem::path& outDir, int cameraIndex, uint64_t timestamp);
+	void initializeVideoCapture(int index);
+	ImageInfo preWriteImageToDisk(const StampedImage& img);
+	void writeImages(); // thread
+	void readImagesFromCaps(); // Images grabber thread
+	std::vector<StampedImage> readSyncedImages();
+	std::filesystem::path generateTmpFilePath();
+	static std::filesystem::path getFinalFilePath(const std::filesystem::path& outDir, int cameraIndex, uint64_t timestamp);
 };
 
 } // namespace mandeye

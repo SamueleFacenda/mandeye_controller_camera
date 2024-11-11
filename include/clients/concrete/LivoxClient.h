@@ -15,8 +15,7 @@
 namespace mandeye
 {
 
-class LivoxClient : public SaveChunkToDirClient, public TimeStampProvider, public LoggerClient, public JsonStateProducer
-{
+class LivoxClient : public SaveChunkToDirClient, public TimeStampProvider, public LoggerClient, public JsonStateProducer {
 public:
 	LivoxClient();
 
@@ -68,12 +67,10 @@ private:
 	std::unordered_map<uint32_t, int32_t> m_LivoxLidarWorkMode;
 	std::unordered_map<uint32_t, int32_t> m_LivoxLidarTimeSync;
 
-
 	std::unordered_map<uint32_t, uint64_t> m_handleToLastTimestamp;
 	std::unordered_map<uint32_t, std::string> m_handleToSerialNumber;
 
 	static void setTimestamp(uint64_t ts, LivoxClient* this_ptr);
-
 
 	//! This is a set of serial numbers that we have already seen, its used to find lidarId
 	std::set<std::string> m_serialNumbers;
@@ -90,9 +87,8 @@ private:
 	IterableToFileSaver<std::unordered_map, uint32_t, std::string> lidarIteratorToFileSaver;
 	std::shared_ptr<std::deque<LivoxIMU>> dumpedBufferImuPtr;
 
-
 	static constexpr char config[] =
-R"(
+		R"(
 {
 	"MID360": {
 		"lidar_net_info" : {
@@ -120,38 +116,19 @@ R"(
 )";
 
 	// callbacks
-	static void PointCloudCallback(uint32_t handle,
-								   const uint8_t dev_type,
-								   LivoxLidarEthernetPacket* data,
-								   void* client_data);
+	static void PointCloudCallback(uint32_t handle, const uint8_t dev_type, LivoxLidarEthernetPacket* data, void* client_data);
 
-	static void ImuDataCallback(uint32_t handle,
-								const uint8_t dev_type,
-								LivoxLidarEthernetPacket* data,
-								void* client_data);
+	static void ImuDataCallback(uint32_t handle, const uint8_t dev_type, LivoxLidarEthernetPacket* data, void* client_data);
 
-	static void WorkModeCallback(livox_status status,
-								 uint32_t handle,
-								 LivoxLidarAsyncControlResponse* response,
-								 void* client_data);
+	static void WorkModeCallback(livox_status status, uint32_t handle, LivoxLidarAsyncControlResponse* response, void* client_data);
 
-	static void SetIpInfoCallback(livox_status status,
-								  uint32_t handle,
-								  LivoxLidarAsyncControlResponse* response,
-								  void* client_data);
+	static void SetIpInfoCallback(livox_status status, uint32_t handle, LivoxLidarAsyncControlResponse* response, void* client_data);
 
-	static void RebootCallback(livox_status status,
-							   uint32_t handle,
-							   LivoxLidarRebootResponse* response,
-							   void* client_data);
+	static void RebootCallback(livox_status status, uint32_t handle, LivoxLidarRebootResponse* response, void* client_data);
 
-	static void QueryInternalInfoCallback(livox_status status,
-										  uint32_t handle,
-										  LivoxLidarDiagInternalInfoResponse* packet,
-										  void* client_data);
+	static void QueryInternalInfoCallback(livox_status status, uint32_t handle, LivoxLidarDiagInternalInfoResponse* packet, void* client_data);
 
-	static void
-	LidarInfoChangeCallback(const uint32_t handle, const LivoxLidarInfo* info, void* client_data);
+	static void LidarInfoChangeCallback(const uint32_t handle, const LivoxLidarInfo* info, void* client_data);
 };
 } // namespace mandeye
 

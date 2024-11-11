@@ -10,11 +10,9 @@
 namespace mandeye
 {
 
-template <template <typename...> class Container, typename... Args>
-class IterableToFileSaver
-{
+template <template <typename...> class Container, typename... Args> class IterableToFileSaver {
 public:
-	using Formatter = std::function<std::string (typename Container<Args...>::value_type)>;
+	using Formatter = std::function<std::string(typename Container<Args...>::value_type)>;
 
 	IterableToFileSaver(std::string fileExtension, std::string fileIdentifier, Formatter formatter)
 		: fileExtension(std::move(fileExtension)), fileIdentifier(std::move(fileIdentifier)), formatter(formatter) {};
@@ -25,7 +23,7 @@ public:
 	void saveDumpedChunkToDirectory(const std::filesystem::path& directory, int chunk) {
 		std::ofstream outs;
 		bool retFileOpen = getSavingStream(outs, directory, chunk);
-		if (!retFileOpen)
+		if(!retFileOpen)
 			return;
 		for(auto& elem : buffer)
 			outs << formatter(elem) << std::endl;
@@ -46,8 +44,7 @@ private:
 		using namespace std::filesystem;
 		path outFile = path(directory) / path(filename);
 		out.open(outFile);
-		if(out.fail())
-		{
+		if(out.fail()) {
 			std::cerr << "Error opening file '" << filename << "' !!" << std::endl;
 			out.close();
 			return false;
@@ -55,7 +52,6 @@ private:
 		return true;
 	}
 };
-
 
 } // namespace mandeye
 

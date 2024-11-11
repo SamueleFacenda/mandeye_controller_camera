@@ -2,8 +2,7 @@
 #include "laszip/laszip_api.h"
 #include <iostream>
 
-bool mandeye::saveLaz(const std::string& filename, const LivoxPointsBufferPtr& buffer)
-{
+bool mandeye::saveLaz(const std::string& filename, const LivoxPointsBufferPtr& buffer) {
 	auto now = std::chrono::system_clock::now();
 	constexpr float scale = 0.0001f; // one tenth of millimeter
 	// find max
@@ -15,8 +14,7 @@ bool mandeye::saveLaz(const std::string& filename, const LivoxPointsBufferPtr& b
 	double min_y{std::numeric_limits<double>::max()};
 	double min_z{std::numeric_limits<double>::max()};
 
-	for(auto& p : *buffer)
-	{
+	for(auto& p : *buffer) {
 		double x = 0.001 * p.point.x;
 		double y = 0.001 * p.point.y;
 		double z = 0.001 * p.point.z;
@@ -33,8 +31,7 @@ bool mandeye::saveLaz(const std::string& filename, const LivoxPointsBufferPtr& b
 	std::cout << "processing: " << filename << "points " << buffer->size() << std::endl;
 
 	laszip_POINTER laszip_writer;
-	if(laszip_create(&laszip_writer))
-	{
+	if(laszip_create(&laszip_writer)) {
 		fprintf(stderr, "DLL ERROR: creating laszip writer\n");
 		return false;
 	}
@@ -43,15 +40,14 @@ bool mandeye::saveLaz(const std::string& filename, const LivoxPointsBufferPtr& b
 
 	laszip_header* header;
 
-	if(laszip_get_header_pointer(laszip_writer, &header))
-	{
+	if(laszip_get_header_pointer(laszip_writer, &header)) {
 		fprintf(stderr, "DLL ERROR: getting header pointer from laszip writer\n");
 		return false;
 	}
 
 	// populate the header
 	int step = 1;
-	if(buffer->size() > 4000000){ // this will likely never happen
+	if(buffer->size() > 4000000) { // this will likely never happen
 		step = ceil((double)buffer->size() / 2000000.0);
 	}
 
@@ -65,8 +61,8 @@ bool mandeye::saveLaz(const std::string& filename, const LivoxPointsBufferPtr& b
 	//    header->file_creation_year = 2013;
 	header->point_data_format = 1;
 	header->point_data_record_length = 0;
-	header->number_of_point_records = num_points;//buffer->size();
-	header->number_of_points_by_return[0] = num_points;//buffer->size();
+	header->number_of_point_records = num_points; //buffer->size();
+	header->number_of_points_by_return[0] = num_points; //buffer->size();
 	header->number_of_points_by_return[1] = 0;
 	header->point_data_record_length = 28;
 	header->x_scale_factor = scale;
@@ -84,8 +80,7 @@ bool mandeye::saveLaz(const std::string& filename, const LivoxPointsBufferPtr& b
 	// open the writer
 	laszip_BOOL compress = (strstr(filename.c_str(), ".laz") != 0);
 
-	if(laszip_open_writer(laszip_writer, filename.c_str(), compress))
-	{
+	if(laszip_open_writer(laszip_writer, filename.c_str(), compress)) {
 		fprintf(stderr, "DLL ERROR: opening laszip writer for '%s'\n", filename.c_str());
 		return false;
 	}
@@ -95,8 +90,7 @@ bool mandeye::saveLaz(const std::string& filename, const LivoxPointsBufferPtr& b
 	// get a pointer to the point of the writer that we will populate and write
 
 	laszip_point* point;
-	if(laszip_get_point_pointer(laszip_writer, &point))
-	{
+	if(laszip_get_point_pointer(laszip_writer, &point)) {
 		fprintf(stderr, "DLL ERROR: getting point pointer from laszip writer\n");
 		return false;
 	}
@@ -104,10 +98,8 @@ bool mandeye::saveLaz(const std::string& filename, const LivoxPointsBufferPtr& b
 	laszip_I64 p_count = 0;
 	laszip_F64 coordinates[3];
 
-
 	//for(int i = 0; i < buffer->size(); i++)
-	for(int i = 0; i < buffer->size(); i += step)
-	{
+	for(int i = 0; i < buffer->size(); i += step) {
 
 		const auto& p = buffer->at(i);
 		point->intensity = p.point.reflectivity;
@@ -118,21 +110,18 @@ bool mandeye::saveLaz(const std::string& filename, const LivoxPointsBufferPtr& b
 		coordinates[0] = 0.001 * p.point.x;
 		coordinates[1] = 0.001 * p.point.y;
 		coordinates[2] = 0.001 * p.point.z;
-		if(laszip_set_coordinates(laszip_writer, coordinates))
-		{
+		if(laszip_set_coordinates(laszip_writer, coordinates)) {
 			fprintf(stderr, "DLL ERROR: setting coordinates for point %I64d\n", p_count);
 			return false;
 		}
 
-		if(laszip_write_point(laszip_writer))
-		{
+		if(laszip_write_point(laszip_writer)) {
 			fprintf(stderr, "DLL ERROR: writing point %I64d\n", p_count);
 			return false;
 		}
 	}
 
-	if(laszip_get_point_count(laszip_writer, &p_count))
-	{
+	if(laszip_get_point_count(laszip_writer, &p_count)) {
 		fprintf(stderr, "DLL ERROR: getting point count\n");
 		return false;
 	}
@@ -141,21 +130,20 @@ bool mandeye::saveLaz(const std::string& filename, const LivoxPointsBufferPtr& b
 
 	// close the writer
 
-	if(laszip_close_writer(laszip_writer))
-	{
+	if(laszip_close_writer(laszip_writer)) {
 		fprintf(stderr, "DLL ERROR: closing laszip writer\n");
 		return false;
 	}
 
 	// destroy the writer
 
-	if(laszip_destroy(laszip_writer))
-	{
+	if(laszip_destroy(laszip_writer)) {
 		fprintf(stderr, "DLL ERROR: destroying laszip writer\n");
 		return false;
 	}
 
 	std::cout << "exportLaz DONE" << std::endl;
-	std::cout << "time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - now).count() << "ms" << std::endl;
+	std::cout << "time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - now).count() << "ms"
+			  << std::endl;
 	return true;
 }

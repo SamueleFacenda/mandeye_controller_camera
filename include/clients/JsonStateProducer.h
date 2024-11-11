@@ -6,8 +6,7 @@
 namespace mandeye
 {
 
-class JsonStateProducer
-{
+class JsonStateProducer {
 public:
 	virtual nlohmann::json produceStatus() = 0;
 	virtual std::string getJsonName() = 0;

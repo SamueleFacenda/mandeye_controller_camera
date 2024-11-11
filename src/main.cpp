@@ -23,13 +23,9 @@
 using namespace mandeye;
 
 void initializeCameraClientThread(ThreadMap& threads) {
-	std::shared_ptr<CamerasClient> camerasClientPtr = std::make_shared<CamerasClient>(
-		utils::getEnvString("MANDEYE_REPO", MANDEYE_REPO),
-		threads);
+	std::shared_ptr<CamerasClient> camerasClientPtr = std::make_shared<CamerasClient>(utils::getEnvString("MANDEYE_REPO", MANDEYE_REPO), threads);
 	camerasClientPtr->SetTimeStampProvider(timeStampProviderPtr);
-	threads["Cameras Client"] = std::make_shared<std::thread>([=]() {
-		camerasClientPtr->receiveImages();
-	});
+	threads["Cameras Client"] = std::make_shared<std::thread>([=]() { camerasClientPtr->receiveImages(); });
 	std::unique_lock<std::shared_mutex> lock(clientsMutex);
 	saveableClients.push_back(camerasClientPtr);
 	loggerClients.push_back(camerasClientPtr);
@@ -42,12 +38,11 @@ void initializeStateMachineThread(ThreadMap& threads) {
 	std::cout << "State Machine initialized" << std::endl;
 }
 
-void initializeLivoxClient(bool& lidar_error)
-{
+void initializeLivoxClient(bool& lidar_error) {
 	std::shared_ptr<LivoxClient> livoxClientPtr = std::make_shared<LivoxClient>();
-	if(!livoxClientPtr->startListener(utils::getEnvString("MANDEYE_LIVOX_LISTEN_IP", MANDEYE_LIVOX_LISTEN_IP))){
+	if(!livoxClientPtr->startListener(utils::getEnvString("MANDEYE_LIVOX_LISTEN_IP", MANDEYE_LIVOX_LISTEN_IP))) {
 		lidar_error = true;
-		if (utils::getEnvBool("IGNORE_LIDAR_ERROR", IGNORE_LIDAR_ERROR)) {
+		if(utils::getEnvBool("IGNORE_LIDAR_ERROR", IGNORE_LIDAR_ERROR)) {
 			std::cerr << "Ignoring lidar error" << std::endl;
 			lidar_error = false;
 			timeStampProviderPtr = std::make_shared<SystemTimeStampProvider>();
@@ -66,7 +61,7 @@ void initializeLivoxClient(bool& lidar_error)
 
 void initializeGnssClient() {
 	const std::string portName = utils::getEnvString("MANDEYE_GNSS_UART", MANDEYE_GNSS_UART);
-	if (!portName.empty()) {
+	if(!portName.empty()) {
 		std::cout << "Initialize gnss" << std::endl;
 		std::shared_ptr<GNSSClient> gnssClientPtr = std::make_shared<GNSSClient>();
 		gnssClientPtr->SetTimeStampProvider(std::dynamic_pointer_cast<TimeStampProvider>(timeStampProviderPtr));
@@ -98,8 +93,7 @@ void initializeGpioClientThread(ThreadMap& threads) {
 
 	// LED dance signalizing that GPIO is ready
 	threads["Gpio"] = std::make_shared<std::thread>([&]() {
-		for(int i = 0; i < 3; i++)
-		{
+		for(int i = 0; i < 3; i++) {
 			utils::blinkLed(LED::LED_GPIO_STOP_SCAN, 100ms);
 			utils::blinkLed(LED::LED_GPIO_CONTINOUS_SCANNING, 100ms);
 			utils::blinkLed(LED::LED_GPIO_COPY_DATA, 100ms);
@@ -132,8 +126,7 @@ void stopApplication(int signal) {
 	isRunning.store(false);
 }
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
 	std::cin.sync_with_stdio(false);
 	std::cout << "program: " << argv[0] << " v0.4" << std::endl;
 	bool lidar_error = false;
@@ -156,7 +149,7 @@ int main(int argc, char** argv)
 	char ch = ' ';
 	std::cout << "Press q -> quit, s -> start scan , e -> end scan" << std::endl;
 	do {
-		if (lidar_error) { // loop guard clause
+		if(lidar_error) { // loop guard clause
 			app_state = States::LIDAR_ERROR;
 			std::cout << "lidar error" << std::endl;
 			std::this_thread::sleep_for(1000ms);
@@ -164,7 +157,7 @@ int main(int argc, char** argv)
 		}
 
 		// check if there is any input, don't do blocking read
-		if (std::cin.rdbuf()->in_avail() == 0) {
+		if(std::cin.rdbuf()->in_avail() == 0) {
 			std::this_thread::sleep_for(100ms);
 			continue;
 		}
@@ -172,14 +165,12 @@ int main(int argc, char** argv)
 		std::cin.get(ch);
 		switch(ch) {
 		case 's':
-			if(StartScan())
-			{
+			if(StartScan()) {
 				std::cout << "start scan success!" << std::endl;
 			}
 			break;
 		case 'e':
-			if(StopScan())
-			{
+			if(StopScan()) {
 				std::cout << "stop scan success!" << std::endl;
 			}
 			break;
@@ -192,13 +183,13 @@ int main(int argc, char** argv)
 		default:
 			std::cerr << "Unknown instruction: '" << ch << "'" << std::endl;
 		}
-	} while (isRunning.load());
+	} while(isRunning.load());
 
 	//// Stop and join everyone
 
 	server->shutdown(); // http server stop
 
-	for(const auto& [name, thread]: threadsWithNames) {
+	for(const auto& [name, thread] : threadsWithNames) {
 		std::cout << "joining " << name << " thread" << std::endl;
 		thread->join();
 	}

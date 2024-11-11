@@ -5,36 +5,33 @@
 
 std::mutex gpioClientPtrLock;
 std::shared_ptr<mandeye::GpioClient> gpioClientPtr;
-bool StopScan()
-{
+bool StopScan() {
 	gpioClientPtr->setLed(mandeye::LED::LED_GPIO_STOP_SCAN, true);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100)); 
-    gpioClientPtr->setLed(mandeye::LED::LED_GPIO_STOP_SCAN, false);
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	gpioClientPtr->setLed(mandeye::LED::LED_GPIO_STOP_SCAN, false);
 	return false;
 }
 
-bool Continous()
-{
+bool Continous() {
 	gpioClientPtr->setLed(mandeye::LED::LED_GPIO_CONTINOUS_SCANNING, true);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100)); 
-    gpioClientPtr->setLed(mandeye::LED::LED_GPIO_CONTINOUS_SCANNING, false);
-	
-    return false;
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	gpioClientPtr->setLed(mandeye::LED::LED_GPIO_CONTINOUS_SCANNING, false);
+
+	return false;
 }
 
+int main(int arc, char* argv[]) {
+	std::cout << "button_demo" << std::endl;
 
-int main(int arc, char *argv[]){
-    std::cout << "button_demo" << std::endl;
+	gpioClientPtr = std::make_shared<mandeye::GpioClient>(0);
+	gpioClientPtr->setLed(mandeye::LED::LED_GPIO_STOP_SCAN, false);
+	gpioClientPtr->setLed(mandeye::LED::LED_GPIO_COPY_DATA, false);
+	gpioClientPtr->setLed(mandeye::LED::LED_GPIO_CONTINOUS_SCANNING, false);
 
-    gpioClientPtr = std::make_shared<mandeye::GpioClient>(0);
-    gpioClientPtr->setLed(mandeye::LED::LED_GPIO_STOP_SCAN, false);
-    gpioClientPtr->setLed(mandeye::LED::LED_GPIO_COPY_DATA, false);
-    gpioClientPtr->setLed(mandeye::LED::LED_GPIO_CONTINOUS_SCANNING, false);
+	//gpioClientPtr->setLed(mandeye::GpioClient::LED::LED_GPIO_BLUE, true);
+	gpioClientPtr->addButtonCallback(mandeye::BUTTON::BUTTON_STOP_SCAN, "LED_GPIO_STOP_SCAN", [&]() { StopScan(); });
+	gpioClientPtr->addButtonCallback(mandeye::BUTTON::BUTTON_CONTINOUS_SCANNING, "STOP_SCAN", [&]() { Continous(); });
+	std::this_thread::sleep_for(std::chrono::milliseconds(100000));
 
-    //gpioClientPtr->setLed(mandeye::GpioClient::LED::LED_GPIO_BLUE, true);
-    gpioClientPtr->addButtonCallback(mandeye::BUTTON::BUTTON_STOP_SCAN, "LED_GPIO_STOP_SCAN", [&]() { StopScan(); });
-    gpioClientPtr->addButtonCallback(mandeye::BUTTON::BUTTON_CONTINOUS_SCANNING, "STOP_SCAN", [&]() { Continous(); });
-    std::this_thread::sleep_for(std::chrono::milliseconds(100000)); 
-
-    return 0;
+	return 0;
 }

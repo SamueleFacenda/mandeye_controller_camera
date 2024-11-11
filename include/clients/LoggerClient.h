@@ -1,7 +1,8 @@
 #ifndef MANDEYE_MULTISENSOR_LOGGERCLIENT_H
 #define MANDEYE_MULTISENSOR_LOGGERCLIENT_H
 
-namespace mandeye {
+namespace mandeye
+{
 
 class LoggerClient {
 public:
@@ -9,6 +10,6 @@ public:
 	virtual void stopLog() = 0;
 };
 
-}
+} // namespace mandeye
 
 #endif //MANDEYE_MULTISENSOR_LOGGERCLIENT_H

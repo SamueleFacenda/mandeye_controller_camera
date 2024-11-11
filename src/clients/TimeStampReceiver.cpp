@@ -5,20 +5,15 @@
 namespace mandeye
 {
 
-void TimeStampReceiver::SetTimeStampProvider(std::shared_ptr<TimeStampProvider> timeStampProvider)
-{
+void TimeStampReceiver::SetTimeStampProvider(std::shared_ptr<TimeStampProvider> timeStampProvider) {
 	m_timeStampProvider = std::move(timeStampProvider);
 }
 
-uint64_t TimeStampReceiver::GetTimeStamp()
-{
-	if (m_timeStampProvider)
-	{
+uint64_t TimeStampReceiver::GetTimeStamp() {
+	if(m_timeStampProvider) {
 		return m_timeStampProvider->getTimestamp();
 	}
 	return 0;
 }
 
-
-}
-
+} // namespace mandeye

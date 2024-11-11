@@ -8,9 +8,7 @@
 namespace utils
 {
 
-template <typename T>
-class BlockingQueue
-{
+template <typename T> class BlockingQueue {
 private:
 	std::queue<T> queue;
 	std::mutex mutex;
@@ -27,7 +25,7 @@ public:
 	T pop() {
 		std::unique_lock<std::mutex> lock(mutex);
 		signal.wait(lock, [this] { return !queue.empty() || !running; });
-		if (!running)
+		if(!running)
 			return T();
 		T value = queue.front();
 		queue.pop();
@@ -46,13 +44,13 @@ public:
 
 	void dropN(size_t n) {
 		std::lock_guard<std::mutex> lock(mutex);
-		while (n-- && !queue.empty())
+		while(n-- && !queue.empty())
 			queue.pop();
 	}
 
 	void keepN(size_t n) {
 		std::lock_guard<std::mutex> lock(mutex);
-		while (queue.size() > n)
+		while(queue.size() > n)
 			queue.pop();
 	}
 
@@ -61,8 +59,6 @@ public:
 		running = false;
 		signal.notify_all();
 	}
-
-
 };
 
 } // namespace utils

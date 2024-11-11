@@ -5,8 +5,7 @@
 namespace mandeye
 {
 //! Interface for a class that provides a timestamp
-class TimeStampProvider
-{
+class TimeStampProvider {
 public:
 	virtual uint64_t getTimestamp() = 0;
 };

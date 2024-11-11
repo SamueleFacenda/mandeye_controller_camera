@@ -14,8 +14,8 @@
 #include <SerialPort.h>
 #include <SerialStream.h>
 
-namespace mandeye {
-
+namespace mandeye
+{
 
 class GNSSClient : public TimeStampReceiver, public SaveChunkToDirClient, public LoggerClient, public JsonStateProducer {
 
@@ -50,7 +50,7 @@ private:
 	LibSerial::SerialStream m_serialPortStream;
 	std::thread m_serialPortThread;
 	std::string m_portName;
-	int m_baudRate {0};
+	int m_baudRate{0};
 	IterableToFileSaver<std::deque, std::string> bufferSaver;
 	void worker();
 
@@ -58,6 +58,5 @@ private:
 
 	//! Convert a minmea_sentence_gga to a CSV line
 	std::string GgaToCsvLine(const minmea_sentence_gga& gga, uint64_t laserTimestamp);
-
 };
 } // namespace mandeye

@@ -14,8 +14,7 @@
 
 namespace mandeye
 {
-enum class States
-{
+enum class States {
 	WAIT_FOR_RESOURCES = -10,
 	IDLE = 0,
 	STARTING_SCAN = 10,

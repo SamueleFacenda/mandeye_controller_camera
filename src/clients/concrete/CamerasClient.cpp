@@ -12,22 +12,22 @@
 // 5, 10, 15, 20, 25, 30, 60, 90
 #define IMAGE_CAPTURE_FPS 10
 #define OPENCV_IMAGE_BUFFER_SIZE 4
-#define MAX_IMAGES_BUFFER_SIZE (200/7)
-#define SAFE_IMAGES_BUFFER_SIZE (100/7)
+#define MAX_IMAGES_BUFFER_SIZE (200 / 7)
+#define SAFE_IMAGES_BUFFER_SIZE (100 / 7)
 #define BATCH_SAVE_SIZE 0
 
-namespace mandeye {
+namespace mandeye
+{
 
 using namespace cv;
 
-CamerasClient::CamerasClient(const std::string& savingMediaPath, ThreadMap& threadsList)
-{
+CamerasClient::CamerasClient(const std::string& savingMediaPath, ThreadMap& threadsList) {
 	isLogging.store(false);
 	tmpDir = std::filesystem::path(savingMediaPath) / ".mandeye_cameras_tmp";
-	if (!std::filesystem::is_directory(tmpDir) && !std::filesystem::create_directories(tmpDir))
+	if(!std::filesystem::is_directory(tmpDir) && !std::filesystem::create_directories(tmpDir))
 		std::cerr << "Error creating directory '" << tmpDir << "'" << std::endl;
 
-	for(int i  = 0; i <= MAX_CAMERA_INDEX; i++)
+	for(int i = 0; i <= MAX_CAMERA_INDEX; i++)
 		initializeVideoCapture(i);
 	std::cout << caps.size() << " cameras initialized" << std::endl;
 
@@ -37,12 +37,12 @@ CamerasClient::CamerasClient(const std::string& savingMediaPath, ThreadMap& thre
 
 void CamerasClient::initializeVideoCapture(int index) {
 	VideoCapture tmp(index, CAP_V4L2); // on raspberry defaults to gstreamer, buggy
-	if (!tmp.isOpened()) {
+	if(!tmp.isOpened()) {
 		std::cerr << "Error opening cap number " << index << std::endl;
 		return;
 	}
 	// fourcc defaults to YUYV, it's too slow
-	tmp.set(CAP_PROP_FOURCC, VideoWriter::fourcc('M','J','P','G'));
+	tmp.set(CAP_PROP_FOURCC, VideoWriter::fourcc('M', 'J', 'P', 'G'));
 	tmp.set(CAP_PROP_FRAME_WIDTH, CAMERA_WIDTH);
 	tmp.set(CAP_PROP_FRAME_HEIGHT, CAMERA_HEIGHT);
 	tmp.set(CAP_PROP_BUFFERSIZE, OPENCV_IMAGE_BUFFER_SIZE);
@@ -53,16 +53,15 @@ void CamerasClient::initializeVideoCapture(int index) {
 	std::cout << "Initialized camera number " << index << std::endl;
 }
 
-void CamerasClient::saveDumpedChunkToDirectory(const std::filesystem::path& dirName, int chunkNumber)
-{
+void CamerasClient::saveDumpedChunkToDirectory(const std::filesystem::path& dirName, int chunkNumber) {
 	// photos_0001
-	std::string chunkDir = "photos_" + std::string(chunkNumber ? 3 - (int) log10(chunkNumber) : 3, '0') + std::to_string(chunkNumber);
+	std::string chunkDir = "photos_" + std::string(chunkNumber ? 3 - (int)log10(chunkNumber) : 3, '0') + std::to_string(chunkNumber);
 	std::filesystem::path outDir = dirName / chunkDir;
-	if (!std::filesystem::is_directory(outDir) && !std::filesystem::create_directories(outDir)) {
+	if(!std::filesystem::is_directory(outDir) && !std::filesystem::create_directories(outDir)) {
 		std::cerr << "Error creating directory '" << outDir << "'" << std::endl;
 		return;
 	}
-	for(auto& img: dumpBuffer) {
+	for(auto& img : dumpBuffer) {
 		std::filesystem::path finalPath = getFinalFilePath(outDir, img.cameraIndex, img.timestamp);
 		std::filesystem::rename(img.path, finalPath);
 	}
@@ -75,23 +74,19 @@ void CamerasClient::dumpChunkInternally() {
 	savedImagesBuffer.clear();
 }
 
-std::vector<StampedImage> CamerasClient::readSyncedImages()
-{
-	if (caps.empty())
+std::vector<StampedImage> CamerasClient::readSyncedImages() {
+	if(caps.empty())
 		// sleep to avoid busy loop
 		std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
 	auto start = std::chrono::high_resolution_clock::now();
-	for(auto& cap: caps)
+	for(auto& cap : caps)
 		cap.grab();
 	uint64_t timestamp = GetTimeStamp();
 
 	std::vector<StampedImage> out;
 	for(int i = 0; i < caps.size(); i++) {
-		StampedImage tmp = {
-			.timestamp = timestamp,
-			.cameraIndex = i
-		};
+		StampedImage tmp = {.timestamp = timestamp, .cameraIndex = i};
 		caps[i].retrieve(tmp.image);
 		out.push_back(tmp);
 	}
@@ -101,11 +96,11 @@ std::vector<StampedImage> CamerasClient::readSyncedImages()
 
 void CamerasClient::receiveImages() {
 	std::vector<StampedImage> currentImages;
-	auto delay = std::chrono::nanoseconds((uint64_t) (1e9 / FPS));
+	auto delay = std::chrono::nanoseconds((uint64_t)(1e9 / FPS));
 
 	while(isRunning.load()) {
 		auto begin = std::chrono::high_resolution_clock::now();
-		if (!isLogging.load()) {
+		if(!isLogging.load()) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 			continue; // do not waste CPU time if we are not logging
 		}
@@ -113,11 +108,11 @@ void CamerasClient::receiveImages() {
 		imagesMutex.lock();
 		currentImages = imagesBuffer;
 		imagesMutex.unlock();
-		for(auto& img: currentImages)
+		for(auto& img : currentImages)
 			writeBuffer.push(img);
 		auto end = std::chrono::high_resolution_clock::now();
 		// std::cout << "Sleep for " << std::chrono::duration_cast<std::chrono::milliseconds>(delay - (end - begin)).count() << std::endl;
-		if (delay < end - begin)
+		if(delay < end - begin)
 			std::cout << "Warning!! Negative sleep time, we are late (probably too slow writing speed)" << std::endl;
 		std::this_thread::sleep_for(delay - (end - begin));
 	}
@@ -131,12 +126,12 @@ void CamerasClient::writeImages() {
 	bool batchSaveCountReached = false, isLedOn = false;
 	while(isRunning.load()) {
 		// std::cout << "Images in buffer: " << writeBuffer.size() << " " << batchSaveCountReached << std::endl;
-		if (writeBuffer.size() > MAX_IMAGES_BUFFER_SIZE) {
+		if(writeBuffer.size() > MAX_IMAGES_BUFFER_SIZE) {
 			writeBuffer.keepN(SAFE_IMAGES_BUFFER_SIZE);
 			std::cout << "Dropping images, buffer is full" << std::endl;
 		}
 
-		if (writeBuffer.size() < BATCH_SAVE_SIZE && !batchSaveCountReached) {
+		if(writeBuffer.size() < BATCH_SAVE_SIZE && !batchSaveCountReached) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 			continue;
 		} else
@@ -144,10 +139,10 @@ void CamerasClient::writeImages() {
 
 		tmp = writeBuffer.pop();
 
-		if (writeBuffer.size() == 0)
+		if(writeBuffer.size() == 0)
 			batchSaveCountReached = false;
 
-		if (tmp.cameraIndex < 0) // empty image
+		if(tmp.cameraIndex < 0) // empty image
 			continue;
 
 		auto now = std::chrono::high_resolution_clock::now();
@@ -158,8 +153,7 @@ void CamerasClient::writeImages() {
 		}
 		auto end = std::chrono::high_resolution_clock::now();
 		double fps = 1.0 / std::chrono::duration<double>(end - now).count();
-		if (fps / caps.size() < FPS)
-		{
+		if(fps / caps.size() < FPS) {
 			std::cout << "Warning!! Writing image to disk took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - now).count() << " ms"
 					  << std::endl;
 			// use unused LED to signal that we are slow writing images
@@ -169,13 +163,8 @@ void CamerasClient::writeImages() {
 	}
 }
 
-ImageInfo CamerasClient::preWriteImageToDisk(const StampedImage& img)
-{
-	ImageInfo tmp{
-		.path = generateTmpFilePath(),
-		.timestamp = img.timestamp,
-		.cameraIndex = img.cameraIndex
-	};
+ImageInfo CamerasClient::preWriteImageToDisk(const StampedImage& img) {
+	ImageInfo tmp{.path = generateTmpFilePath(), .timestamp = img.timestamp, .cameraIndex = img.cameraIndex};
 	imwrite(tmp.path, img.image, {IMWRITE_JPEG_QUALITY, 100});
 	return tmp;
 }
@@ -192,13 +181,11 @@ void CamerasClient::stopLog() {
 	savedImagesBuffer.clear();
 }
 
-std::filesystem::path CamerasClient::generateTmpFilePath()
-{
-	return tmpDir / ("tmpImage_" +std::to_string(tmpImageCounter++) + IMAGE_FORMAT);
+std::filesystem::path CamerasClient::generateTmpFilePath() {
+	return tmpDir / ("tmpImage_" + std::to_string(tmpImageCounter++) + IMAGE_FORMAT);
 }
 
-std::filesystem::path CamerasClient::getFinalFilePath(const std::filesystem::path& outDir, int cameraIndex, uint64_t timestamp)
-{
+std::filesystem::path CamerasClient::getFinalFilePath(const std::filesystem::path& outDir, int cameraIndex, uint64_t timestamp) {
 	// camera_0_chunk_0001_ts_1234567890.jpg
 	return outDir / ("camera_" + std::to_string(cameraIndex) +
 					 // "_chunk_" + std::string(chunk ? 3 - (int) log10(chunk) : 3, '0') + std::to_string(chunk) +
@@ -218,10 +205,10 @@ void CamerasClient::readImagesFromCaps() {
 		auto fps = 1.0 / std::chrono::duration<double>(end - start).count();
 		long millis = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 		// std::cout << "Reading images at " << fps << " fps" << std::endl;
-		if (fps < FPS)
+		if(fps < FPS)
 			std::cout << "Warning!! Reading images took " << millis << " ms" << std::endl;
 	}
-	for(auto& cap: caps)
+	for(auto& cap : caps)
 		cap.release();
 }
 

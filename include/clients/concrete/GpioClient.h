@@ -7,19 +7,11 @@
 namespace mandeye
 {
 
-enum class LED {
-	LED_GPIO_STOP_SCAN = 26,
-	LED_GPIO_COPY_DATA = 19,
-	LED_GPIO_CONTINOUS_SCANNING = 13
-};
+enum class LED { LED_GPIO_STOP_SCAN = 26, LED_GPIO_COPY_DATA = 19, LED_GPIO_CONTINOUS_SCANNING = 13 };
 
-enum class BUTTON {
-	BUTTON_STOP_SCAN = 5,
-	BUTTON_CONTINOUS_SCANNING = 6
-};
+enum class BUTTON { BUTTON_STOP_SCAN = 5, BUTTON_CONTINOUS_SCANNING = 6 };
 
-class GpioClient : public JsonStateProducer
-{
+class GpioClient : public JsonStateProducer {
 public:
 	//! Constructor
 	//! @param sim if true hardware is not called
@@ -34,9 +26,7 @@ public:
 	void setLed(LED led, bool state);
 
 	//! addcalback
-	void addButtonCallback(BUTTON btn,
-						   const std::string& callbackName,
-						   const std::function<void()>& callback);
+	void addButtonCallback(BUTTON btn, const std::string& callbackName, const std::function<void()>& callback);
 
 private:
 	using Callbacks = std::unordered_map<std::string, std::function<void()>>;
