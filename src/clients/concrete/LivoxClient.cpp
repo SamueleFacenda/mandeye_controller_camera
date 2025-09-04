@@ -1,4 +1,5 @@
 #include "clients/concrete/LivoxClient.h"
+#include "state_management.h"
 #include <livox_lidar_api.h>
 #include <livox_lidar_def.h>
 #include "utils/save_laz.h"
@@ -162,8 +163,9 @@ std::pair<LivoxPointsBufferPtr, LivoxIMUBufferPtr> LivoxClient::retrieveData() {
 void LivoxClient::testThread() {
 	std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 	std::cout << "Livox periodical watch thread" << std::endl;
+	bool isLedOn = false;
 	while(!isDone) {
-		std::this_thread::sleep_for(std::chrono::milliseconds(200));
+		std::this_thread::sleep_for(std::chrono::milliseconds(400));
 
 		std::lock_guard<std::mutex> lcK(this->m_lidarInfoMutex);
 		for(auto& it : this->m_handleToSerialNumber) {
@@ -173,6 +175,9 @@ void LivoxClient::testThread() {
 			// wakey wakey sleepy head - if lidar is sleeping, wake it up
 			if(auto it = m_LivoxLidarWorkMode.find(handle); it != m_LivoxLidarWorkMode.end()) {
 				if(it->second != kLivoxLidarNormal) {
+					gpioClientPtr->setLed(LED::LED_GPIO_STOP_SCAN, isLedOn);
+					isLedOn = !isLedOn;
+
 					std::cout << "wakey wakey lidar with handle" << it->first << std::endl;
 					SetLivoxLidarWorkMode(handle, kLivoxLidarNormal, &LivoxClient::WorkModeCallback, this);
 				}
