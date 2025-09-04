@@ -173,6 +173,32 @@ void LivoxClient::testThread() {
 			// wakey wakey sleepy head - if lidar is sleeping, wake it up
 			if(auto it = m_LivoxLidarWorkMode.find(handle); it != m_LivoxLidarWorkMode.end()) {
 				if(it->second != kLivoxLidarNormal) {
+					switch (it->second) {
+					case kLivoxLidarSleep:
+						std::cout << "lidar is sleeping" << std::endl;
+						break;
+					case kLivoxLidarError:
+						std::cout << "lidar is in error state" << std::endl;
+						break;
+					case kLivoxLidarPowerOnSelfTest:
+						std::cout << "lidar is in self test state" << std::endl;
+						break;
+					case kLivoxLidarMotorStarting:
+						std::cout << "lidar motor is starting" << std::endl;
+						break;
+					case kLivoxLidarMotorStoping:
+						std::cout << "lidar motor is stopping" << std::endl;
+						break;
+					case kLivoxLidarUpgrade:
+						std::cout << "lidar is in upgrade mode" << std::endl;
+						break;
+					case kLivoxLidarWakeUp:
+						std::cout << "lidar is waking up" << std::endl;
+						break;
+					default:
+						std::cout << "lidar is in unknown state" << it->second << std::endl;
+						break;
+					}
 					std::cout << "wakey wakey lidar with handle" << it->first << std::endl;
 					SetLivoxLidarWorkMode(handle, kLivoxLidarNormal, &LivoxClient::WorkModeCallback, this);
 				}
@@ -305,7 +331,21 @@ void LivoxClient::SetIpInfoCallback(livox_status status, uint32_t handle, LivoxL
 
 void LivoxClient::QueryInternalInfoCallback(livox_status status, uint32_t handle, LivoxLidarDiagInternalInfoResponse* response, void* client_data) {
 	if(status != kLivoxLidarStatusSuccess) {
-		printf("Query lidar internal info failed.\n");
+		std::cout << "Query lidar internal info failed." << std::endl ;
+		switch (status) {
+		case kLivoxLidarStatusNotConnected:
+			std::cout << "lidar not connected" << std::endl;
+			break;
+		case kLivoxLidarStatusTimeout:
+			std::cout << "lidar timeout" << std::endl;
+			break;
+		case kLivoxLidarStatusInvalidHandle:
+			std::cout << "lidar invalid handle" << std::endl;
+			break;
+		default:
+			std::cout << "lidar unknown error" << std::endl;
+			break;
+		}
 		LivoxClient* this_ptr = (LivoxClient*)(client_data);
 		assert(this_ptr);
 		std::lock_guard<std::mutex> lcK(this_ptr->m_lidarInfoMutex);

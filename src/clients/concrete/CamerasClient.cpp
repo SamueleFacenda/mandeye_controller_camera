@@ -4,7 +4,7 @@
 #include <execution>
 #include <ranges>
 
-#define MAX_CAMERA_INDEX 6
+#define MAX_CAMERA_INDEX 10
 #define CAMERA_WIDTH 1920
 #define CAMERA_HEIGHT 1200
 #define FPS 2
