@@ -163,7 +163,7 @@ void LivoxClient::testThread() {
 	std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 	std::cout << "Livox periodical watch thread" << std::endl;
 	while(!isDone) {
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+		std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
 		std::lock_guard<std::mutex> lcK(this->m_lidarInfoMutex);
 		for(auto& it : this->m_handleToSerialNumber) {
@@ -173,32 +173,6 @@ void LivoxClient::testThread() {
 			// wakey wakey sleepy head - if lidar is sleeping, wake it up
 			if(auto it = m_LivoxLidarWorkMode.find(handle); it != m_LivoxLidarWorkMode.end()) {
 				if(it->second != kLivoxLidarNormal) {
-					switch (it->second) {
-					case kLivoxLidarSleep:
-						std::cout << "lidar is sleeping" << std::endl;
-						break;
-					case kLivoxLidarError:
-						std::cout << "lidar is in error state" << std::endl;
-						break;
-					case kLivoxLidarPowerOnSelfTest:
-						std::cout << "lidar is in self test state" << std::endl;
-						break;
-					case kLivoxLidarMotorStarting:
-						std::cout << "lidar motor is starting" << std::endl;
-						break;
-					case kLivoxLidarMotorStoping:
-						std::cout << "lidar motor is stopping" << std::endl;
-						break;
-					case kLivoxLidarUpgrade:
-						std::cout << "lidar is in upgrade mode" << std::endl;
-						break;
-					case kLivoxLidarWakeUp:
-						std::cout << "lidar is waking up" << std::endl;
-						break;
-					default:
-						std::cout << "lidar is in unknown state" << it->second << std::endl;
-						break;
-					}
 					std::cout << "wakey wakey lidar with handle" << it->first << std::endl;
 					SetLivoxLidarWorkMode(handle, kLivoxLidarNormal, &LivoxClient::WorkModeCallback, this);
 				}
