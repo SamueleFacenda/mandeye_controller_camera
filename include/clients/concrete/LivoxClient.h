@@ -90,6 +90,9 @@ private:
 	static constexpr char config[] =
 		R"(
 {
+"lidar_log_enable"        : true,
+"lidar_log_cache_size_MB" : 500,
+"lidar_log_path"          : "/media/usb/livox_logs/",
 	"MID360": {
 		"lidar_net_info" : {
 			"cmd_data_port": 56100,
@@ -129,6 +132,8 @@ private:
 	static void QueryInternalInfoCallback(livox_status status, uint32_t handle, LivoxLidarDiagInternalInfoResponse* packet, void* client_data);
 
 	static void LidarInfoChangeCallback(const uint32_t handle, const LivoxLidarInfo* info, void* client_data);
+
+	static void LoggerStartCallback(livox_status status, uint32_t handle, LivoxLidarLoggerResponse* response, void* client_data);
 };
 } // namespace mandeye
 

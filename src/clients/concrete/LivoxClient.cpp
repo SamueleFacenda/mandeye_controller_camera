@@ -194,7 +194,8 @@ bool LivoxClient::startListener(const std::string& interfaceIp) {
 	std::ofstream configFile(configFn);
 	configFile << fillInConfig;
 	configFile.close();
-	DisableLivoxSdkConsoleLogger();
+	SaveLivoxLidarSdkLoggerFile();
+	// DisableLivoxSdkConsoleLogger();
 	init_succes = LivoxLidarSdkInit(configFn);
 	if(!init_succes) {
 		return false;
@@ -399,6 +400,7 @@ void LivoxClient::LidarInfoChangeCallback(const uint32_t handle, const LivoxLida
 	SetLivoxLidarWorkMode(handle, kLivoxLidarNormal, &LivoxClient::WorkModeCallback, client_data);
 
 	QueryLivoxLidarInternalInfo(handle, &LivoxClient::QueryInternalInfoCallback, client_data);
+	LivoxLidarStartLogger(handle, kLivoxLidarRealTimeLog, &LivoxClient::LoggerStartCallback, nullptr);
 	LivoxClient* this_ptr = (LivoxClient*)(client_data);
 	if(this_ptr) {
 		std::lock_guard<std::mutex> lcK(this_ptr->m_lidarInfoMutex);
@@ -412,6 +414,29 @@ void LivoxClient::LidarInfoChangeCallback(const uint32_t handle, const LivoxLida
 		std::cout << " **** Adding lidar " << sn << " handle " << handle << std::endl;
 	}
 }
+
+void LivoxClient::LoggerStartCallback(livox_status status, uint32_t handle, LivoxLidarLoggerResponse* response, void* client_data) {
+	if (status != kLivoxLidarStatusSuccess) {
+		printf("Start logger failed, the status :%d\n", status);
+		LivoxLidarStartLogger(handle,  kLivoxLidarRealTimeLog, LoggerStartCallback, nullptr);
+		return;
+	}
+
+	if (response == nullptr) {
+		printf("Start logger failed, the response is nullptr.\n");
+		LivoxLidarStartLogger(handle,  kLivoxLidarRealTimeLog, LoggerStartCallback, nullptr);
+		return;
+	}
+
+	if (response->ret_code != 0) {
+		printf("Start logger failed, the response ret_Code:%d.\n", response->ret_code);
+		LivoxLidarStartLogger(handle,  kLivoxLidarRealTimeLog, LoggerStartCallback, nullptr);
+		return;
+	}
+
+	printf("The lidar[%u] start logger succ.\n", handle);
+}
+
 uint64_t LivoxClient::getTimestamp() {
 	std::lock_guard<std::mutex> lcK(m_timestampMutex);
 	return m_timestamp;
